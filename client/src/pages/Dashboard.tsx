@@ -15,6 +15,8 @@ import { AlertCircle, Atom } from "lucide-react";
 
 export default function Dashboard() {
   const { isConnected } = useWallet();
+  
+  console.log("Dashboard - isConnected:", isConnected);
 
   if (!isMetaMaskInstalled()) {
     return (
