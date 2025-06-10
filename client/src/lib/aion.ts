@@ -187,9 +187,6 @@ export const getAIONContractRead = () => {
     throw new Error("No provider available");
   }
   
-  console.log("Creating contract with address:", AION_CONTRACT_ADDRESS);
-  console.log("Provider network:", provider.network);
-  
   return new ethers.Contract(AION_CONTRACT_ADDRESS, AION_ABI, provider);
 };
 

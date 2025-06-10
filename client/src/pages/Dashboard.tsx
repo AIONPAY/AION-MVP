@@ -6,6 +6,7 @@ import { ExecuteTransfer } from "@/components/ExecuteTransfer";
 import { WithdrawFunds } from "@/components/WithdrawFunds";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { ProtocolStats } from "@/components/ProtocolStats";
+import { NetworkStatus } from "@/components/NetworkStatus";
 import { NotificationSystem } from "@/components/NotificationSystem";
 import { useWallet } from "@/hooks/useWallet";
 import { isMetaMaskInstalled } from "@/lib/web3";
@@ -75,7 +76,7 @@ export default function Dashboard() {
                 <span className="text-gray-400">Network:</span>
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span>Localhost</span>
+                  <span>Sepolia</span>
                 </div>
               </div>
               
@@ -88,6 +89,7 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isConnected ? (
           <>
+            <NetworkStatus />
             <WalletStatus />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
