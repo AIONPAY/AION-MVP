@@ -4,6 +4,63 @@ import { getSigner, getProvider } from "./web3";
 // Contract configuration - Sepolia deployment
 export const AION_CONTRACT_ADDRESS = "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9";
 
+// ERC20 Token ABI for interacting with tokens
+export const ERC20_ABI = [
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "constant": true,
+    "stateMutability": "view",
+    "inputs": [{"type": "address", "name": "account"}],
+    "outputs": [{"type": "uint256"}]
+  },
+  {
+    "type": "function",
+    "name": "allowance",
+    "constant": true,
+    "stateMutability": "view", 
+    "inputs": [
+      {"type": "address", "name": "owner"},
+      {"type": "address", "name": "spender"}
+    ],
+    "outputs": [{"type": "uint256"}]
+  },
+  {
+    "type": "function",
+    "name": "approve",
+    "constant": false,
+    "inputs": [
+      {"type": "address", "name": "spender"},
+      {"type": "uint256", "name": "amount"}
+    ],
+    "outputs": [{"type": "bool"}]
+  },
+  {
+    "type": "function",
+    "name": "decimals",
+    "constant": true,
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{"type": "uint8"}]
+  },
+  {
+    "type": "function", 
+    "name": "symbol",
+    "constant": true,
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{"type": "string"}]
+  },
+  {
+    "type": "function",
+    "name": "name", 
+    "constant": true,
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{"type": "string"}]
+  }
+];
+
 export const AION_ABI = [
   {
     "type": "constructor",
@@ -160,6 +217,167 @@ export const AION_ABI = [
     "payable": false,
     "inputs": [{"type": "bytes32"}],
     "outputs": [{"type": "bool"}]
+  },
+  // ERC20 Functions
+  {
+    "type": "function",
+    "name": "lockFundsERC20",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {"type": "address", "name": "token"},
+      {"type": "uint256", "name": "amount"}
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "lockAndWrapERC20",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {"type": "address", "name": "token"},
+      {"type": "uint256", "name": "amount"}
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "unwrapAndUnlockERC20",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {"type": "address", "name": "token"},
+      {"type": "uint256", "name": "amount"}
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "executeERC20Transfer",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {"type": "address", "name": "token"},
+      {"type": "address", "name": "from"},
+      {"type": "address", "name": "to"},
+      {"type": "uint256", "name": "amount"},
+      {"type": "bytes32", "name": "nonce"},
+      {"type": "uint256", "name": "deadline"},
+      {"type": "bytes", "name": "signature"}
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "withdrawFundsERC20",
+    "constant": false,
+    "payable": false,
+    "inputs": [{"type": "address", "name": "token"}],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "cancelWithdrawalERC20",
+    "constant": false,
+    "payable": false,
+    "inputs": [{"type": "address", "name": "token"}],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "lockedFundsERC20",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {"type": "address", "name": "token"},
+      {"type": "address", "name": "user"}
+    ],
+    "outputs": [{"type": "uint256"}]
+  },
+  {
+    "type": "function",
+    "name": "withdrawTimestampsERC20",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [
+      {"type": "address", "name": "user"},
+      {"type": "address", "name": "token"}
+    ],
+    "outputs": [{"type": "uint256"}]
+  },
+  {
+    "type": "function",
+    "name": "wrappedTokenFor",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [{"type": "address", "name": "token"}],
+    "outputs": [{"type": "address"}]
+  },
+  // Events for ERC20
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "FundsLockedERC20",
+    "inputs": [
+      {"type": "address", "name": "user", "indexed": true},
+      {"type": "address", "name": "token", "indexed": true},
+      {"type": "uint256", "name": "amount", "indexed": false},
+      {"type": "uint256", "name": "timestamp", "indexed": false}
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "WithdrawalInitiatedERC20",
+    "inputs": [
+      {"type": "address", "name": "user", "indexed": true},
+      {"type": "address", "name": "token", "indexed": true},
+      {"type": "uint256", "name": "timestamp", "indexed": false}
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "WithdrawalCancelledERC20",
+    "inputs": [
+      {"type": "address", "name": "user", "indexed": true},
+      {"type": "address", "name": "token", "indexed": true},
+      {"type": "uint256", "name": "timestamp", "indexed": false}
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "FundsTransferredERC20",
+    "inputs": [
+      {"type": "address", "name": "from", "indexed": true},
+      {"type": "address", "name": "to", "indexed": true},
+      {"type": "address", "name": "token", "indexed": true},
+      {"type": "uint256", "name": "amount", "indexed": false}
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "FundsWithdrawnERC20",
+    "inputs": [
+      {"type": "address", "name": "user", "indexed": true},
+      {"type": "address", "name": "token", "indexed": true},
+      {"type": "uint256", "name": "amount", "indexed": false}
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "WrappedTokenCreated",
+    "inputs": [
+      {"type": "address", "name": "underlyingToken", "indexed": true},
+      {"type": "address", "name": "wrappedToken", "indexed": true}
+    ]
   }
 ];
 
@@ -171,6 +389,7 @@ export interface SignedTransferMessage {
   deadline: number;
   signature: string;
   contractAddress: string;
+  tokenAddress?: string; // Optional for ERC20 transfers
 }
 
 export const getAIONContract = () => {
@@ -337,4 +556,164 @@ export const validateSignedMessage = async (
     isValid: Object.values(checks).every(Boolean),
     checks
   };
+};
+
+// ===== ERC20 TOKEN FUNCTIONS =====
+
+export const getERC20Contract = (tokenAddress: string) => {
+  const signer = getSigner();
+  if (!signer) {
+    throw new Error("No signer available");
+  }
+  return new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+};
+
+export const getERC20ContractRead = (tokenAddress: string) => {
+  const provider = getProvider();
+  if (!provider) {
+    throw new Error("No provider available");
+  }
+  return new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+};
+
+export const getTokenInfo = async (tokenAddress: string) => {
+  const contract = getERC20ContractRead(tokenAddress);
+  
+  try {
+    const [name, symbol, decimals] = await Promise.all([
+      contract.name(),
+      contract.symbol(),
+      contract.decimals()
+    ]);
+    
+    return { name, symbol, decimals };
+  } catch (error) {
+    console.error("Error getting token info:", error);
+    throw error;
+  }
+};
+
+export const getTokenBalance = async (tokenAddress: string, userAddress: string): Promise<ethers.BigNumber> => {
+  const contract = getERC20ContractRead(tokenAddress);
+  return await contract.balanceOf(userAddress);
+};
+
+export const getTokenAllowance = async (tokenAddress: string, owner: string, spender: string): Promise<ethers.BigNumber> => {
+  const contract = getERC20ContractRead(tokenAddress);
+  return await contract.allowance(owner, spender);
+};
+
+export const approveToken = async (tokenAddress: string, amount: string): Promise<ethers.ContractTransaction> => {
+  const contract = getERC20Contract(tokenAddress);
+  const tokenInfo = await getTokenInfo(tokenAddress);
+  const amountWei = ethers.utils.parseUnits(amount, tokenInfo.decimals);
+  
+  return await contract.approve(AION_CONTRACT_ADDRESS, amountWei);
+};
+
+export const lockFundsERC20 = async (tokenAddress: string, amount: string): Promise<ethers.ContractTransaction> => {
+  const contract = getAIONContract();
+  const tokenInfo = await getTokenInfo(tokenAddress);
+  const amountWei = ethers.utils.parseUnits(amount, tokenInfo.decimals);
+  
+  return await contract.lockFundsERC20(tokenAddress, amountWei);
+};
+
+export const lockAndWrapERC20 = async (tokenAddress: string, amount: string): Promise<ethers.ContractTransaction> => {
+  const contract = getAIONContract();
+  const tokenInfo = await getTokenInfo(tokenAddress);
+  const amountWei = ethers.utils.parseUnits(amount, tokenInfo.decimals);
+  
+  return await contract.lockAndWrapERC20(tokenAddress, amountWei);
+};
+
+export const unwrapAndUnlockERC20 = async (tokenAddress: string, amount: string): Promise<ethers.ContractTransaction> => {
+  const contract = getAIONContract();
+  const tokenInfo = await getTokenInfo(tokenAddress);
+  const amountWei = ethers.utils.parseUnits(amount, tokenInfo.decimals);
+  
+  return await contract.unwrapAndUnlockERC20(tokenAddress, amountWei);
+};
+
+export const createSignedERC20Transfer = async (
+  tokenAddress: string,
+  from: string,
+  to: string,
+  amount: string
+): Promise<SignedTransferMessage> => {
+  const signer = getSigner();
+  if (!signer) {
+    throw new Error("No signer available");
+  }
+
+  const nonce = ethers.utils.randomBytes(32);
+  const deadline = Math.floor(Date.now() / 1000) + 300;
+  
+  const tokenInfo = await getTokenInfo(tokenAddress);
+  const amountWei = ethers.utils.parseUnits(amount, tokenInfo.decimals);
+  
+  const messageHash = ethers.utils.solidityKeccak256(
+    ["address", "address", "address", "uint256", "bytes32", "uint256", "address"],
+    [tokenAddress, from, to, amountWei, nonce, deadline, AION_CONTRACT_ADDRESS]
+  );
+  
+  const signature = await signer.signMessage(ethers.utils.arrayify(messageHash));
+  
+  return {
+    from,
+    to,
+    amount,
+    nonce: ethers.utils.hexlify(nonce),
+    deadline,
+    signature,
+    contractAddress: AION_CONTRACT_ADDRESS,
+    tokenAddress
+  };
+};
+
+export const executeSignedERC20Transfer = async (
+  signedMessage: SignedTransferMessage
+): Promise<ethers.ContractTransaction> => {
+  if (!signedMessage.tokenAddress) {
+    throw new Error("Token address is required for ERC20 transfers");
+  }
+  
+  const contract = getAIONContract();
+  const tokenInfo = await getTokenInfo(signedMessage.tokenAddress);
+  const amountWei = ethers.utils.parseUnits(signedMessage.amount, tokenInfo.decimals);
+  
+  return await contract.executeERC20Transfer(
+    signedMessage.tokenAddress,
+    signedMessage.from,
+    signedMessage.to,
+    amountWei,
+    signedMessage.nonce,
+    signedMessage.deadline,
+    signedMessage.signature
+  );
+};
+
+export const withdrawFundsERC20 = async (tokenAddress: string): Promise<ethers.ContractTransaction> => {
+  const contract = getAIONContract();
+  return await contract.withdrawFundsERC20(tokenAddress);
+};
+
+export const cancelWithdrawalERC20 = async (tokenAddress: string): Promise<ethers.ContractTransaction> => {
+  const contract = getAIONContract();
+  return await contract.cancelWithdrawalERC20(tokenAddress);
+};
+
+export const getLockedBalanceERC20 = async (tokenAddress: string, userAddress: string): Promise<ethers.BigNumber> => {
+  const contract = getAIONContractRead();
+  return await contract.lockedFundsERC20(tokenAddress, userAddress);
+};
+
+export const getWithdrawalTimestampERC20 = async (tokenAddress: string, userAddress: string): Promise<ethers.BigNumber> => {
+  const contract = getAIONContractRead();
+  return await contract.withdrawTimestampsERC20(userAddress, tokenAddress);
+};
+
+export const getWrappedTokenAddress = async (tokenAddress: string): Promise<string> => {
+  const contract = getAIONContractRead();
+  return await contract.wrappedTokenFor(tokenAddress);
 };
