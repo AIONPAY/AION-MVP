@@ -3,7 +3,11 @@ import { signedTransfers, transactionLogs } from "@shared/schema";
 import { eq, and, lt } from "drizzle-orm";
 import { TransactionExecutor } from "./executor";
 import { TransferValidator, SignedTransferMessage } from "./validator";
-import { WebSocketManager } from "./websocket";
+// WebSocketManager type definition
+interface WebSocketManager {
+  broadcast(type: string, data: any, topic?: string): void;
+  sendToTransferSubscribers(transferId: number, type: string, data: any): void;
+}
 
 export interface QueueStats {
   pending: number;
@@ -212,39 +216,32 @@ export class TransactionQueue {
 
   public async getQueueStats(): Promise<QueueStats> {
     try {
-      const stats = await db
-        .select({
-          status: signedTransfers.status
-        })
+      const pendingCount = await db
+        .select()
         .from(signedTransfers)
-        .groupBy(signedTransfers.status);
+        .where(eq(signedTransfers.status, "validated"));
 
-      const result: QueueStats = {
-        pending: 0,
-        processing: 0,
-        failed: 0,
-        completed: 0
+      const processingCount = await db
+        .select()
+        .from(signedTransfers)
+        .where(eq(signedTransfers.status, "pending"));
+
+      const failedCount = await db
+        .select()
+        .from(signedTransfers)
+        .where(eq(signedTransfers.status, "failed"));
+
+      const completedCount = await db
+        .select()
+        .from(signedTransfers)
+        .where(eq(signedTransfers.status, "confirmed"));
+
+      return {
+        pending: pendingCount.length,
+        processing: processingCount.length,
+        failed: failedCount.length,
+        completed: completedCount.length
       };
-
-      for (const stat of stats) {
-        switch (stat.status) {
-          case "received":
-          case "validated":
-            result.pending += stat.count;
-            break;
-          case "pending":
-            result.processing += stat.count;
-            break;
-          case "failed":
-            result.failed += stat.count;
-            break;
-          case "confirmed":
-            result.completed += stat.count;
-            break;
-        }
-      }
-
-      return result;
     } catch (error) {
       console.error("Error getting queue stats:", error);
       return {

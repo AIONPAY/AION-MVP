@@ -3,7 +3,11 @@ import { db } from "../db";
 import { signedTransfers, transactionLogs } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { TransferValidator, SignedTransferMessage } from "./validator";
-import { WebSocketManager } from "./websocket";
+// WebSocketManager type definition
+interface WebSocketManager {
+  broadcast(type: string, data: any, topic?: string): void;
+  sendToTransferSubscribers(transferId: number, type: string, data: any): void;
+}
 
 const AION_CONTRACT_ADDRESS = "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9";
 const AION_ABI = [
