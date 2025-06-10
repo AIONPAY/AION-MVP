@@ -84,19 +84,31 @@ export const useWallet = () => {
         const account = accounts[0];
         console.log("Setting connected state for account:", account);
         
-        setWalletState(prev => ({
-          ...prev,
-          isConnected: true,
-          account,
-        }));
+        setWalletState(prev => {
+          // Only update if we're not already connected to this account
+          if (!prev.isConnected || prev.account !== account) {
+            return {
+              ...prev,
+              isConnected: true,
+              account,
+            };
+          }
+          return prev;
+        });
         await updateBalance(account);
       } else {
         console.log("No accounts found, setting disconnected state");
-        setWalletState(prev => ({
-          ...prev,
-          isConnected: false,
-          account: null,
-        }));
+        setWalletState(prev => {
+          // Only update if we're currently connected
+          if (prev.isConnected) {
+            return {
+              ...prev,
+              isConnected: false,
+              account: null,
+            };
+          }
+          return prev;
+        });
       }
     } catch (error) {
       console.error("Error checking connection:", error);
