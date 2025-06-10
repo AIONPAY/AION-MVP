@@ -18,6 +18,8 @@ export const useWallet = () => {
     isLoading: false,
   });
   const { toast } = useToast();
+  
+  console.log("useWallet hook - current state:", walletState);
 
   const updateBalance = useCallback(async (account: string) => {
     try {
@@ -138,20 +140,33 @@ export const useWallet = () => {
   }, []);
 
   useEffect(() => {
-    checkConnection();
+    let mounted = true;
+    
+    const initializeConnection = async () => {
+      if (mounted) {
+        await checkConnection();
+      }
+    };
+    
+    initializeConnection();
 
     if (typeof window !== "undefined" && window.ethereum) {
       window.ethereum.on("accountsChanged", handleAccountsChanged);
       window.ethereum.on("chainChanged", handleChainChanged);
 
       return () => {
+        mounted = false;
         if (window.ethereum?.removeListener) {
           window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
           window.ethereum.removeListener("chainChanged", handleChainChanged);
         }
       };
     }
-  }, [checkConnection, handleAccountsChanged, handleChainChanged]);
+    
+    return () => {
+      mounted = false;
+    };
+  }, [handleAccountsChanged, handleChainChanged]); // Keep only event handlers as dependencies
 
   return {
     ...walletState,
