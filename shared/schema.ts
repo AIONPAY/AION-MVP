@@ -10,13 +10,19 @@ export const users = pgTable("users", {
 
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
-  txHash: text("tx_hash").notNull().unique(),
+  txHash: text("tx_hash").unique(),
   type: text("type").notNull(), // 'lock', 'transfer', 'withdrawal'
   fromAddress: text("from_address").notNull(),
   toAddress: text("to_address"),
   amount: decimal("amount", { precision: 18, scale: 18 }).notNull(),
-  status: text("status").notNull(), // 'pending', 'confirmed', 'failed'
+  status: text("status").notNull(), // 'received', 'validated', 'pending', 'confirmed', 'failed'
   blockNumber: integer("block_number"),
+  gasUsed: text("gas_used"),
+  gasPrice: text("gas_price"),
+  retryCount: integer("retry_count").notNull().default(0),
+  errorMessage: text("error_message"),
+  submittedAt: timestamp("submitted_at"),
+  confirmedAt: timestamp("confirmed_at"),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
 });
 
@@ -28,8 +34,33 @@ export const signedTransfers = pgTable("signed_transfers", {
   nonce: text("nonce").notNull().unique(),
   deadline: integer("deadline").notNull(),
   signature: text("signature").notNull(),
-  executed: boolean("executed").notNull().default(false),
+  contractAddress: text("contract_address").notNull(),
+  status: text("status").notNull().default("received"), // 'received', 'validated', 'pending', 'confirmed', 'failed'
+  txHash: text("tx_hash"),
+  blockNumber: integer("block_number"),
+  retryCount: integer("retry_count").notNull().default(0),
+  errorMessage: text("error_message"),
+  validatedAt: timestamp("validated_at"),
+  submittedAt: timestamp("submitted_at"),
+  confirmedAt: timestamp("confirmed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const transactionLogs = pgTable("transaction_logs", {
+  id: serial("id").primaryKey(),
+  transactionId: integer("transaction_id").references(() => transactions.id),
+  signedTransferId: integer("signed_transfer_id").references(() => signedTransfers.id),
+  status: text("status").notNull(),
+  message: text("message"),
+  metadata: text("metadata"), // JSON string for additional data
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+});
+
+export const relayerConfig = pgTable("relayer_config", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -40,12 +71,31 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,
   timestamp: true,
+  submittedAt: true,
+  confirmedAt: true,
 });
 
 export const insertSignedTransferSchema = createInsertSchema(signedTransfers).omit({
   id: true,
-  executed: true,
+  status: true,
+  txHash: true,
+  blockNumber: true,
+  retryCount: true,
+  errorMessage: true,
+  validatedAt: true,
+  submittedAt: true,
+  confirmedAt: true,
   createdAt: true,
+});
+
+export const insertTransactionLogSchema = createInsertSchema(transactionLogs).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertRelayerConfigSchema = createInsertSchema(relayerConfig).omit({
+  id: true,
+  updatedAt: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -54,3 +104,7 @@ export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type SignedTransfer = typeof signedTransfers.$inferSelect;
 export type InsertSignedTransfer = z.infer<typeof insertSignedTransferSchema>;
+export type TransactionLog = typeof transactionLogs.$inferSelect;
+export type InsertTransactionLog = z.infer<typeof insertTransactionLogSchema>;
+export type RelayerConfig = typeof relayerConfig.$inferSelect;
+export type InsertRelayerConfig = z.infer<typeof insertRelayerConfigSchema>;
