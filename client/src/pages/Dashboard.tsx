@@ -1,6 +1,7 @@
 import { WalletConnection } from "@/components/WalletConnection";
 import { WalletStatus } from "@/components/WalletStatus";
 import { LockFunds } from "@/components/LockFunds";
+import { LockFundsERC20 } from "@/components/LockFundsERC20";
 import { CreateTransfer } from "@/components/CreateTransfer";
 import { ExecuteTransfer } from "@/components/ExecuteTransfer";
 import { WithdrawFunds } from "@/components/WithdrawFunds";
@@ -97,6 +98,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 <LockFunds />
+                <LockFundsERC20 />
                 <CreateTransfer />
                 <ExecuteTransfer />
                 <WithdrawFunds />
