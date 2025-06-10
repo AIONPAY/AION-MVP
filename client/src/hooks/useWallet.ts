@@ -35,13 +35,16 @@ export const useWallet = () => {
   }, []);
 
   const connect = useCallback(async () => {
+    console.log("Connect button clicked");
     setWalletState(prev => ({ ...prev, isLoading: true }));
     
     try {
       const accounts = await connectWallet();
+      console.log("Connect result:", accounts);
       
       if (accounts.length > 0) {
         const account = accounts[0];
+        console.log("Setting connected state in connect function:", account);
         
         setWalletState(prev => ({
           ...prev,
@@ -57,9 +60,11 @@ export const useWallet = () => {
           description: `Connected to ${account.slice(0, 6)}...${account.slice(-4)}`,
         });
       } else {
+        console.log("No accounts returned from connect");
         setWalletState(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error: any) {
+      console.error("Connection error:", error);
       setWalletState(prev => ({ ...prev, isLoading: false }));
       toast({
         title: "Connection Failed",
@@ -70,11 +75,14 @@ export const useWallet = () => {
   }, [toast, updateBalance]);
 
   const checkConnection = useCallback(async () => {
+    console.log("Checking wallet connection...");
     try {
       const accounts = await getAccounts();
+      console.log("Found accounts:", accounts);
       
       if (accounts.length > 0) {
         const account = accounts[0];
+        console.log("Setting connected state for account:", account);
         
         setWalletState(prev => ({
           ...prev,
@@ -82,6 +90,13 @@ export const useWallet = () => {
           account,
         }));
         await updateBalance(account);
+      } else {
+        console.log("No accounts found, setting disconnected state");
+        setWalletState(prev => ({
+          ...prev,
+          isConnected: false,
+          account: null,
+        }));
       }
     } catch (error) {
       console.error("Error checking connection:", error);

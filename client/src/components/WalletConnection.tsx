@@ -5,6 +5,8 @@ import { isMetaMaskInstalled } from "@/lib/web3";
 
 export function WalletConnection() {
   const { isConnected, connect, isLoading } = useWallet();
+  
+  console.log("WalletConnection render - isConnected:", isConnected, "isLoading:", isLoading);
 
   if (!isMetaMaskInstalled()) {
     return (
