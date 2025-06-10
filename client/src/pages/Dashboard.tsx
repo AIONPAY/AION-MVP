@@ -8,7 +8,7 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { ProtocolStats } from "@/components/ProtocolStats";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { NotificationSystem } from "@/components/NotificationSystem";
-import { useWallet } from "@/hooks/useWallet";
+import { useWallet } from "@/contexts/WalletContext";
 import { isMetaMaskInstalled } from "@/lib/web3";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Atom } from "lucide-react";

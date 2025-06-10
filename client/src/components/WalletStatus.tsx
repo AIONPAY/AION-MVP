@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Wallet } from "lucide-react";
-import { useWallet } from "@/hooks/useWallet";
+import { useWallet } from "@/contexts/WalletContext";
 import { useAION } from "@/hooks/useAION";
 import { formatAddress } from "@/lib/web3";
 

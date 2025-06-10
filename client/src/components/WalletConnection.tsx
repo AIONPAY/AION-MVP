@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Wallet, Check } from "lucide-react";
-import { useWallet } from "@/hooks/useWallet";
+import { useWallet } from "@/contexts/WalletContext";
 import { isMetaMaskInstalled } from "@/lib/web3";
 
 export function WalletConnection() {
