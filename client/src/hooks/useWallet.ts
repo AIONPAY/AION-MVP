@@ -35,12 +35,17 @@ export const useWallet = () => {
   }, []);
 
   const connect = useCallback(async () => {
+    console.log("Connect wallet function called");
     setWalletState(prev => ({ ...prev, isLoading: true }));
     
     try {
       const accounts = await connectWallet();
+      console.log("Accounts received:", accounts);
+      
       if (accounts.length > 0) {
         const account = accounts[0];
+        console.log("Setting wallet state with account:", account);
+        
         setWalletState(prev => ({
           ...prev,
           isConnected: true,
@@ -52,10 +57,14 @@ export const useWallet = () => {
         
         toast({
           title: "Wallet Connected",
-          description: "Successfully connected to MetaMask",
+          description: `Connected to ${account.slice(0, 6)}...${account.slice(-4)}`,
         });
+      } else {
+        console.log("No accounts found");
+        setWalletState(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error: any) {
+      console.error("Wallet connection error:", error);
       setWalletState(prev => ({ ...prev, isLoading: false }));
       toast({
         title: "Connection Failed",
@@ -66,16 +75,23 @@ export const useWallet = () => {
   }, [toast, updateBalance]);
 
   const checkConnection = useCallback(async () => {
+    console.log("Checking existing wallet connection...");
     try {
       const accounts = await getAccounts();
+      console.log("Existing accounts found:", accounts);
+      
       if (accounts.length > 0) {
         const account = accounts[0];
+        console.log("Setting existing connection for account:", account);
+        
         setWalletState(prev => ({
           ...prev,
           isConnected: true,
           account,
         }));
         await updateBalance(account);
+      } else {
+        console.log("No existing connection found");
       }
     } catch (error) {
       console.error("Error checking connection:", error);

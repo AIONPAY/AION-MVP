@@ -55,11 +55,21 @@ export const useAION = (account: string | null) => {
         gracePeriodActive,
         isLoading: false,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating AION state:", error);
+      
+      // If it's a contract call exception, the contract isn't deployed
+      if (error.code === 'CALL_EXCEPTION') {
+        toast({
+          title: "Contract Not Available",
+          description: "AION contract not found on this network. Please check your network or deploy the contract.",
+          variant: "destructive",
+        });
+      }
+      
       setAIONState(prev => ({ ...prev, isLoading: false }));
     }
-  }, [account]);
+  }, [account, toast]);
 
   const setupEventListeners = useCallback(() => {
     if (!account) return;

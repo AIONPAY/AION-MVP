@@ -1,8 +1,8 @@
 import { ethers } from "ethers";
 import { getSigner, getProvider } from "./web3";
 
-// Contract configuration from attached assets
-export const AION_CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+// Contract configuration - Sepolia deployment
+export const AION_CONTRACT_ADDRESS = "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9";
 
 export const AION_ABI = [
   {
@@ -186,6 +186,10 @@ export const getAIONContractRead = () => {
   if (!provider) {
     throw new Error("No provider available");
   }
+  
+  console.log("Creating contract with address:", AION_CONTRACT_ADDRESS);
+  console.log("Provider network:", provider.network);
+  
   return new ethers.Contract(AION_CONTRACT_ADDRESS, AION_ABI, provider);
 };
 
