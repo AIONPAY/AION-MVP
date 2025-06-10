@@ -1,0 +1,919 @@
+# 🔧 AION Protocol Integration Specification
+
+**Version**: 1.0  
+**Contract Version**: AION v1.0  
+**Last Updated**: 2024
+
+This document defines the **exact** interface for integrating with the AION Protocol smart contract. Use this as your definitive reference for all interactions.
+
+---
+
+## 📋 Contract Information
+
+### Contract Addresses
+```javascript
+// Local Development (Hardhat)
+const AION_CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+
+// Testnet Addresses (Update when deployed)
+const AION_TESTNET_ADDRESS = "TBD";
+
+// Mainnet Address (Update when deployed)  
+const AION_MAINNET_ADDRESS = "TBD";
+```
+
+### Contract ABI Location
+```bash
+# After compilation, find ABI at:
+./artifacts/contracts/AION.sol/AION.json
+```
+
+---
+
+## 🔍 Core Functions Reference
+
+### 1. Lock Funds (ETH)
+
+**Function Signature:**
+```solidity
+function lockFundsETH() external payable
+```
+
+**Parameters:**
+- `msg.value`: Amount of ETH to lock (in wei)
+
+**Requirements:**
+- `msg.value > 0`
+
+**Events Emitted:**
+```solidity
+event FundsLockedETH(address indexed user, uint256 amount, uint256 timestamp);
+```
+
+**JavaScript Example:**
+```javascript
+// Lock 1 ETH
+const tx = await aionContract.lockFundsETH({
+    value: ethers.utils.parseEther("1.0")
+});
+await tx.wait();
+```
+
+**Error Conditions:**
+- `"Locking amount must be greater than zero"` - if msg.value is 0
+
+---
+
+### 2. Create Signed Transfer
+
+**Function Signature:**
+```solidity
+function executeETHTransfer(
+    address from,
+    address to, 
+    uint256 amount,
+    bytes32 nonce,
+    uint256 deadline,
+    bytes memory signature
+) external nonReentrant allowTransferDuringGracePeriod(from)
+```
+
+**Off-Chain Signature Creation:**
+
+```javascript
+/**
+ * Creates a signed transfer message
+ * @param {string} from - Sender address
+ * @param {string} to - Recipient address  
+ * @param {string} amount - Amount in ETH (e.g., "1.0")
+ * @param {ethers.Signer} signer - Ethers signer object
+ * @param {string} contractAddress - AION contract address
+ * @returns {Object} Signed message object
+ */
+async function createSignedTransfer(from, to, amount, signer, contractAddress) {
+    // Generate unique nonce
+    const nonce = ethers.utils.randomBytes(32);
+    
+    // Set deadline (5 minutes from now)
+    const deadline = Math.floor(Date.now() / 1000) + 300;
+    
+    // Convert amount to wei
+    const amountWei = ethers.utils.parseEther(amount);
+    
+    // Create message hash
+    const messageHash = ethers.utils.solidityKeccak256(
+        ["address", "address", "uint256", "bytes32", "uint256", "address"],
+        [from, to, amountWei, nonce, deadline, contractAddress]
+    );
+    
+    // Sign the message
+    const signature = await signer.signMessage(ethers.utils.arrayify(messageHash));
+    
+    return {
+        from: from,
+        to: to,
+        amount: amount,
+        nonce: ethers.utils.hexlify(nonce),
+        deadline: deadline,
+        signature: signature,
+        contractAddress: contractAddress
+    };
+}
+```
+
+**On-Chain Execution:**
+
+```javascript
+/**
+ * Executes a signed transfer
+ * @param {Object} signedMessage - Message from createSignedTransfer()
+ * @param {ethers.Contract} contract - AION contract instance
+ */
+async function executeSignedTransfer(signedMessage, contract) {
+    const tx = await contract.executeETHTransfer(
+        signedMessage.from,
+        signedMessage.to,
+        ethers.utils.parseEther(signedMessage.amount),
+        signedMessage.nonce,
+        signedMessage.deadline,
+        signedMessage.signature
+    );
+    
+    return await tx.wait();
+}
+```
+
+**Events Emitted:**
+```solidity
+event FundsTransferred(address indexed from, address indexed to, uint256 amount);
+```
+
+**Error Conditions:**
+- `"AION: SIGNATURE_EXPIRED"` - deadline has passed
+- `"Nonce already used"` - nonce was already used
+- `"Invalid sender signature"` - signature verification failed
+- `"AION: SENDER_WITHDRAWAL_LOCKOUT"` - sender has withdrawal active past grace period
+
+---
+
+### 3. Withdrawal Process
+
+**Step 1: Initiate Withdrawal**
+```solidity
+function initiateWithdrawal() external noActiveWithdrawal(msg.sender)
+```
+
+**JavaScript Example:**
+```javascript
+const tx = await aionContract.initiateWithdrawal();
+await tx.wait();
+```
+
+**Step 2: Execute Withdrawal (after delay)**
+```solidity
+function withdrawFundsETH() external onlyAfterDelay(msg.sender) nonReentrant
+```
+
+**JavaScript Example:**
+```javascript
+// Wait 10 minutes after initiation, then:
+const tx = await aionContract.withdrawFundsETH();
+await tx.wait();
+```
+
+**Constants:**
+```solidity
+uint256 public constant WITHDRAWAL_DELAY = 10 minutes;
+```
+
+---
+
+## 📊 State Queries
+
+### Check Locked Balance
+```javascript
+const balance = await aionContract.lockedFundsETH(userAddress);
+const balanceETH = ethers.utils.formatEther(balance);
+```
+
+### Check Withdrawal Status
+```javascript
+const timestamp = await aionContract.withdrawTimestamps(userAddress);
+const hasActiveWithdrawal = timestamp.gt(0);
+
+if (hasActiveWithdrawal) {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const withdrawalTime = timestamp.toNumber();
+    const canWithdraw = currentTime >= (withdrawalTime + 600); // 10 minutes
+}
+```
+
+### Check Nonce Usage
+```javascript
+const isUsed = await aionContract.usedNonces(nonceBytes32);
+```
+
+### Grace Period Calculation
+```javascript
+/**
+ * Checks if a transfer would be allowed during grace period
+ * @param {string} senderAddress - Address of the sender
+ * @param {ethers.Contract} contract - AION contract instance
+ */
+async function isInGracePeriod(senderAddress, contract) {
+    const withdrawalTimestamp = await contract.withdrawTimestamps(senderAddress);
+    
+    if (withdrawalTimestamp.eq(0)) {
+        return true; // No active withdrawal
+    }
+    
+    const currentTime = Math.floor(Date.now() / 1000);
+    const withdrawalTime = withdrawalTimestamp.toNumber();
+    const gracePeriodEnd = withdrawalTime + 300; // 5 minutes
+    
+    return currentTime <= gracePeriodEnd;
+}
+```
+
+---
+
+## 🎯 Complete Integration Workflows
+
+### Workflow 1: Basic Payment
+
+```javascript
+class AIONPaymentHandler {
+    constructor(contractAddress, provider) {
+        this.contract = new ethers.Contract(contractAddress, AION_ABI, provider);
+    }
+    
+    // Step 1: Sender locks funds
+    async lockFunds(amount, signer) {
+        const contractWithSigner = this.contract.connect(signer);
+        const tx = await contractWithSigner.lockFundsETH({
+            value: ethers.utils.parseEther(amount)
+        });
+        return await tx.wait();
+    }
+    
+    // Step 2: Sender creates payment
+    async createPayment(senderAddress, recipientAddress, amount, signer) {
+        return await createSignedTransfer(
+            senderAddress, 
+            recipientAddress, 
+            amount, 
+            signer, 
+            this.contract.address
+        );
+    }
+    
+    // Step 3: Recipient (or anyone) executes payment
+    async executePayment(signedMessage, executorSigner) {
+        const contractWithSigner = this.contract.connect(executorSigner);
+        return await executeSignedTransfer(signedMessage, contractWithSigner);
+    }
+}
+```
+
+### Workflow 2: Pre-flight Checks
+
+```javascript
+/**
+ * Validates a signed message before execution
+ * @param {Object} signedMessage - The signed message to validate
+ * @param {ethers.Contract} contract - AION contract instance
+ */
+async function validateSignedMessage(signedMessage, contract) {
+    const checks = {
+        deadlineValid: false,
+        nonceUnused: false,
+        senderHasFunds: false,
+        inGracePeriod: false,
+        signatureValid: false
+    };
+    
+    // Check deadline
+    const currentTime = Math.floor(Date.now() / 1000);
+    checks.deadlineValid = currentTime <= signedMessage.deadline;
+    
+    // Check nonce
+    checks.nonceUnused = !(await contract.usedNonces(signedMessage.nonce));
+    
+    // Check sender balance
+    const senderBalance = await contract.lockedFundsETH(signedMessage.from);
+    const requiredAmount = ethers.utils.parseEther(signedMessage.amount);
+    checks.senderHasFunds = senderBalance.gte(requiredAmount);
+    
+    // Check grace period
+    checks.inGracePeriod = await isInGracePeriod(signedMessage.from, contract);
+    
+    // Note: Signature validation would need to be done on-chain
+    checks.signatureValid = true; // Assume valid for pre-flight
+    
+    return {
+        isValid: Object.values(checks).every(Boolean),
+        checks: checks
+    };
+}
+```
+
+---
+
+## 🔄 Event Monitoring
+
+### Event Listeners Setup
+
+```javascript
+/**
+ * Sets up event listeners for AION contract
+ * @param {ethers.Contract} contract - AION contract instance
+ */
+function setupEventListeners(contract) {
+    
+    // Funds locked
+    contract.on("FundsLockedETH", (user, amount, timestamp, event) => {
+        console.log(`Funds locked: ${ethers.utils.formatEther(amount)} ETH by ${user}`);
+    });
+    
+    // Transfer executed
+    contract.on("FundsTransferred", (from, to, amount, event) => {
+        console.log(`Transfer: ${ethers.utils.formatEther(amount)} ETH from ${from} to ${to}`);
+    });
+    
+    // Withdrawal initiated
+    contract.on("WithdrawalInitiated", (user, timestamp, event) => {
+        console.log(`Withdrawal initiated by ${user} at ${timestamp}`);
+    });
+    
+    // Withdrawal completed
+    contract.on("FundsWithdrawn", (user, amount, event) => {
+        console.log(`Withdrawal completed: ${ethers.utils.formatEther(amount)} ETH to ${user}`);
+    });
+}
+```
+
+### Query Historical Events
+
+```javascript
+/**
+ * Gets transfer history for an address
+ * @param {ethers.Contract} contract - AION contract instance
+ * @param {string} userAddress - Address to query
+ * @param {number} fromBlock - Starting block (optional)
+ */
+async function getTransferHistory(contract, userAddress, fromBlock = 0) {
+    const sentFilter = contract.filters.FundsTransferred(userAddress, null);
+    const receivedFilter = contract.filters.FundsTransferred(null, userAddress);
+    
+    const sentEvents = await contract.queryFilter(sentFilter, fromBlock);
+    const receivedEvents = await contract.queryFilter(receivedFilter, fromBlock);
+    
+    return {
+        sent: sentEvents.map(event => ({
+            to: event.args.to,
+            amount: ethers.utils.formatEther(event.args.amount),
+            blockNumber: event.blockNumber,
+            transactionHash: event.transactionHash
+        })),
+        received: receivedEvents.map(event => ({
+            from: event.args.from,
+            amount: ethers.utils.formatEther(event.args.amount),
+            blockNumber: event.blockNumber,
+            transactionHash: event.transactionHash
+        }))
+    };
+}
+```
+
+---
+
+## ⚠️ Error Handling Reference
+
+### Common Error Messages
+
+| Error Message | Cause | Solution |
+|--------------|-------|----------|
+| `"Locking amount must be greater than zero"` | Tried to lock 0 ETH | Send ETH with transaction |
+| `"AION: SIGNATURE_EXPIRED"` | Deadline passed | Create new signature |
+| `"Nonce already used"` | Replay attack/duplicate | Generate new nonce |
+| `"Invalid sender signature"` | Wrong signature | Verify signature creation |
+| `"AION: SENDER_WITHDRAWAL_LOCKOUT"` | Grace period expired | Wait or cancel withdrawal |
+| `"No ETH funds to withdraw"` | No locked balance | Lock funds first |
+| `"Withdrawal delay not met"` | Tried to withdraw too early | Wait 10 minutes |
+| `"Active ETH withdrawal request"` | Multiple withdrawal attempts | Cancel or wait |
+
+### Error Handling Pattern
+
+```javascript
+async function safeContractCall(contractFunction, ...args) {
+    try {
+        const tx = await contractFunction(...args);
+        return await tx.wait();
+    } catch (error) {
+        if (error.reason) {
+            console.error("Contract Error:", error.reason);
+            throw new Error(`AION Error: ${error.reason}`);
+        } else if (error.message.includes("user rejected")) {
+            throw new Error("Transaction cancelled by user");
+        } else {
+            console.error("Unknown Error:", error);
+            throw new Error("Transaction failed");
+        }
+    }
+}
+```
+
+---
+
+## 🧪 Testing Utilities
+
+### Test Helper Functions
+
+```javascript
+/**
+ * Test utilities for AION integration
+ */
+class AIONTestUtils {
+    constructor(contract, signers) {
+        this.contract = contract;
+        this.signers = signers;
+    }
+    
+    // Fast-forward time in test environment
+    async fastForward(seconds) {
+        await ethers.provider.send("evm_increaseTime", [seconds]);
+        await ethers.provider.send("evm_mine");
+    }
+    
+    // Get test signed message
+    async getTestSignedMessage(fromIndex = 0, toIndex = 1, amount = "1.0") {
+        return await createSignedTransfer(
+            this.signers[fromIndex].address,
+            this.signers[toIndex].address,
+            amount,
+            this.signers[fromIndex],
+            this.contract.address
+        );
+    }
+    
+    // Setup test scenario
+    async setupBasicScenario() {
+        // Signer 0 locks 10 ETH
+        await this.contract.connect(this.signers[0]).lockFundsETH({
+            value: ethers.utils.parseEther("10.0")
+        });
+        
+        return {
+            sender: this.signers[0],
+            recipient: this.signers[1],
+            executor: this.signers[2]
+        };
+    }
+}
+```
+
+---
+
+## 📱 Frontend Integration Examples
+
+### React Hook for AION
+
+```javascript
+import { useState, useEffect } from 'react';
+import { ethers } from 'ethers';
+
+export function useAION(contractAddress, provider) {
+    const [contract, setContract] = useState(null);
+    const [userBalance, setUserBalance] = useState('0');
+    const [account, setAccount] = useState('');
+    
+    useEffect(() => {
+        if (provider && contractAddress) {
+            const aionContract = new ethers.Contract(contractAddress, AION_ABI, provider);
+            setContract(aionContract);
+        }
+    }, [provider, contractAddress]);
+    
+    const refreshBalance = async (address) => {
+        if (contract && address) {
+            const balance = await contract.lockedFundsETH(address);
+            setUserBalance(ethers.utils.formatEther(balance));
+        }
+    };
+    
+    const lockFunds = async (amount, signer) => {
+        if (!contract) throw new Error("Contract not initialized");
+        
+        const contractWithSigner = contract.connect(signer);
+        const tx = await contractWithSigner.lockFundsETH({
+            value: ethers.utils.parseEther(amount)
+        });
+        
+        await tx.wait();
+        await refreshBalance(await signer.getAddress());
+        return tx;
+    };
+    
+    return {
+        contract,
+        userBalance,
+        lockFunds,
+        refreshBalance,
+        createSignedTransfer: (from, to, amount, signer) => 
+            createSignedTransfer(from, to, amount, signer, contractAddress),
+        executeTransfer: (signedMessage, signer) => 
+            executeSignedTransfer(signedMessage, contract.connect(signer))
+    };
+}
+```
+
+---
+
+## 🔐 Security Considerations
+
+### 1. Signature Security
+- **Always verify signatures on-chain** - Never trust client-side validation
+- **Use unique nonces** - Prevent replay attacks
+- **Set reasonable deadlines** - Balance security vs usability (recommended: 5-30 minutes)
+
+### 2. Grace Period Behavior
+- **Check withdrawal status** before accepting signed messages
+- **Understand the 5-minute grace period** - transfers allowed immediately after withdrawal initiation
+- **After grace period** - transfers blocked until withdrawal completes or is cancelled
+
+### 3. Integration Security
+- **Validate all inputs** - Especially addresses and amounts
+- **Handle edge cases** - Zero amounts, invalid addresses, etc.
+- **Monitor events** - Track all contract interactions
+- **Test thoroughly** - Use the provided test utilities
+
+---
+
+## 📚 Quick Reference
+
+### Essential Constants
+```javascript
+const WITHDRAWAL_DELAY = 10 * 60; // 10 minutes
+const GRACE_PERIOD = 5 * 60;      // 5 minutes  
+const DEFAULT_DEADLINE = 5 * 60;  // 5 minutes for signatures
+```
+
+### Must-Have Functions
+1. `createSignedTransfer()` - Generate payment authorizations
+2. `executeSignedTransfer()` - Execute payments
+3. `validateSignedMessage()` - Pre-flight validation
+4. `isInGracePeriod()` - Check withdrawal status
+
+### Key Events to Monitor
+- `FundsLockedETH` - New deposits
+- `FundsTransferred` - Successful transfers  
+- `WithdrawalInitiated` - Withdrawal started
+- `FundsWithdrawn` - Withdrawal completed
+
+---
+
+## 🚀 Relayer Backend for Instant Settlement
+
+### Overview
+
+For true **instant settlement**, AION requires a **relayer backend service** that automatically executes signed transactions. Recipients get immediate confirmation instead of manually executing payments.
+
+### 🔄 Relayer Architecture
+
+```
+Frontend → Creates Signed Message → Relayer Backend → Executes on Blockchain → Instant Confirmation
+```
+
+### 📡 Relayer API Specification
+
+#### **POST /api/relay**
+Submit signed payment for immediate execution.
+
+**Request:**
+```javascript
+{
+  "signedMessage": {
+    "from": "0x...",
+    "to": "0x...", 
+    "amount": "1.0",
+    "nonce": "0x...",
+    "deadline": 1234567890,
+    "signature": "0x..."
+  }
+}
+```
+
+**Response (202 Accepted):**
+```javascript
+{
+  "status": "accepted",
+  "message": "Payment accepted for immediate execution", 
+  "requestId": "uuid-here",
+  "estimatedConfirmation": "10-30 seconds"
+}
+```
+
+#### **GET /api/status/:requestId**
+Check transaction status.
+
+**Response:**
+```javascript
+{
+  "status": "confirmed", // "pending" | "confirmed" | "failed"
+  "transactionHash": "0x...",
+  "blockNumber": 12345,
+  "timestamp": "2024-01-01T00:00:00Z"
+}
+```
+
+#### **POST /api/validate**
+Validate signed message (dry run).
+
+**Response:**
+```javascript
+{
+  "isValid": true,
+  "checks": {
+    "deadlineValid": true,
+    "nonceUnused": true,
+    "senderHasFunds": true,
+    "inGracePeriod": true,
+    "signatureValid": true
+  }
+}
+```
+
+### 🔌 Real-Time WebSocket Updates
+
+**Connect to:** `ws://relayer-backend.com/`
+
+**Events:**
+```javascript
+// Payment accepted for execution
+{
+  "type": "payment_accepted",
+  "requestId": "uuid",
+  "from": "0x...",
+  "to": "0x...",
+  "amount": "1.0",
+  "timestamp": "2024-01-01T00:00:00Z"
+}
+
+// Payment confirmed on-chain
+{
+  "type": "payment_confirmed", 
+  "requestId": "uuid",
+  "transactionHash": "0x...",
+  "blockNumber": 12345,
+  "gasUsed": "21000"
+}
+
+// Payment failed
+{
+  "type": "payment_failed",
+  "requestId": "uuid", 
+  "error": "Transaction reverted"
+}
+```
+
+### 💻 Frontend Integration with Relayer
+
+#### **React Hook for Instant Payments**
+
+```javascript
+import { useState } from 'react';
+
+export function useInstantPayments(relayerUrl = 'https://relayer.aion.com') {
+  const [pendingPayments, setPendingPayments] = useState(new Map());
+  
+  const sendInstantPayment = async (signedMessage) => {
+    try {
+      // Submit to relayer
+      const response = await fetch(`${relayerUrl}/api/relay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signedMessage })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Track pending payment
+        setPendingPayments(prev => new Map(prev).set(result.requestId, {
+          status: 'pending',
+          signedMessage,
+          timestamp: new Date().toISOString()
+        }));
+        
+        return { success: true, requestId: result.requestId };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+  
+  const checkPaymentStatus = async (requestId) => {
+    try {
+      const response = await fetch(`${relayerUrl}/api/status/${requestId}`);
+      const status = await response.json();
+      
+      // Update pending payments
+      setPendingPayments(prev => {
+        const updated = new Map(prev);
+        if (updated.has(requestId)) {
+          updated.set(requestId, { ...updated.get(requestId), ...status });
+        }
+        return updated;
+      });
+      
+      return status;
+    } catch (error) {
+      return { error: error.message };
+    }
+  };
+  
+  return {
+    sendInstantPayment,
+    checkPaymentStatus,
+    pendingPayments: Array.from(pendingPayments.values())
+  };
+}
+```
+
+#### **WebSocket Real-Time Updates**
+
+```javascript
+export function usePaymentUpdates(relayerUrl = 'wss://relayer.aion.com') {
+  const [updates, setUpdates] = useState([]);
+  const [connected, setConnected] = useState(false);
+  
+  useEffect(() => {
+    const ws = new WebSocket(relayerUrl);
+    
+    ws.onopen = () => setConnected(true);
+    ws.onclose = () => setConnected(false);
+    
+    ws.onmessage = (event) => {
+      const update = JSON.parse(event.data);
+      setUpdates(prev => [update, ...prev].slice(0, 100)); // Keep last 100
+    };
+    
+    return () => ws.close();
+  }, [relayerUrl]);
+  
+  return { updates, connected };
+}
+```
+
+### 🏗️ Complete Payment Flow
+
+#### **1. Sender Creates Payment**
+```javascript
+// Frontend code
+const { sendInstantPayment } = useInstantPayments();
+
+async function createInstantPayment(to, amount) {
+  // Create signed message (same as before)
+  const signedMessage = await createSignedTransfer(
+    senderAddress, to, amount, signer, contractAddress
+  );
+  
+  // Send to relayer for instant execution
+  const result = await sendInstantPayment(signedMessage);
+  
+  if (result.success) {
+    alert(`Payment submitted! Request ID: ${result.requestId}`);
+    // Recipient gets instant confirmation via WebSocket
+  } else {
+    alert(`Payment failed: ${result.error}`);
+  }
+}
+```
+
+#### **2. Recipient Gets Instant Notification**
+```javascript
+// Recipient's frontend
+const { updates } = usePaymentUpdates();
+
+useEffect(() => {
+  const latestUpdate = updates[0];
+  if (latestUpdate?.type === 'payment_accepted' && 
+      latestUpdate.to === recipientAddress) {
+    
+    // Show instant "payment incoming" notification
+    showNotification(`Payment incoming: ${latestUpdate.amount} ETH`);
+  }
+  
+  if (latestUpdate?.type === 'payment_confirmed' && 
+      latestUpdate.to === recipientAddress) {
+    
+    // Show confirmed payment
+    showNotification(`Payment confirmed! TX: ${latestUpdate.transactionHash}`);
+  }
+}, [updates]);
+```
+
+### 🔧 Relayer Backend Requirements
+
+#### **Core Components:**
+1. **Transaction Executor** - Executes signed messages on-chain
+2. **Payment Validator** - Validates messages before execution  
+3. **WebSocket Server** - Real-time updates
+4. **Rate Limiter** - Prevents spam/abuse
+5. **Analytics Service** - Transaction monitoring
+6. **Notification System** - Webhooks for external services
+
+#### **Environment Variables:**
+```bash
+# Relayer configuration
+RELAYER_PRIVATE_KEY=0x...        # Relayer's private key
+AION_CONTRACT_ADDRESS=0x...      # Deployed AION contract
+RPC_URL=https://...              # Blockchain RPC endpoint
+NETWORK=sepolia                  # Network name
+
+# API configuration  
+PORT=3001                        # Server port
+ENABLE_ANALYTICS=true            # Analytics tracking
+WEBHOOK_URL=https://...          # Notification webhooks
+
+# Gas settings
+GAS_PRICE=20000000000           # 20 gwei
+MAX_GAS_LIMIT=500000            # Max gas per transaction
+```
+
+#### **Deployment Options:**
+```bash
+# Docker deployment
+docker run -d \
+  --name aion-relayer \
+  -p 3001:3001 \
+  -e RELAYER_PRIVATE_KEY=0x... \
+  -e AION_CONTRACT_ADDRESS=0x... \
+  aion-relayer:latest
+
+# Cloud deployment (AWS/GCP/Azure)
+# - Use environment variables for secrets
+# - Auto-scaling for high throughput
+# - Load balancer for multiple instances
+# - Redis for shared state
+```
+
+### 🔐 Security Considerations
+
+#### **Relayer Security:**
+- **Private Key Protection** - Use hardware security modules (HSM)
+- **Rate Limiting** - Prevent spam and DoS attacks
+- **Input Validation** - Validate all signed messages
+- **Gas Management** - Monitor and limit gas usage
+- **Monitoring** - Alert on unusual activity
+
+#### **Economic Model:**
+```javascript
+// Relayer fee structure (optional)
+{
+  "baseFee": "0.001", // 0.001 ETH base fee
+  "gasFee": "dynamic", // Actual gas cost + markup
+  "priorityFee": "0.0005" // Fast execution fee
+}
+```
+
+### 📊 Monitoring & Analytics
+
+#### **Key Metrics:**
+- Transactions per second (TPS)
+- Average execution time
+- Success/failure rates
+- Gas costs and optimization
+- User adoption metrics
+
+#### **Health Checks:**
+```javascript
+// GET /health
+{
+  "status": "healthy",
+  "network": "sepolia",
+  "blockNumber": 12345,
+  "relayerBalance": "10.5 ETH",
+  "contractAddress": "0x...",
+  "uptime": "99.9%"
+}
+```
+
+### 🚀 Production Deployment Checklist
+
+- [ ] **Relayer Backend** deployed with monitoring
+- [ ] **WebSocket server** for real-time updates  
+- [ ] **Rate limiting** and DDoS protection
+- [ ] **Private key security** (HSM/encrypted storage)
+- [ ] **Health checks** and alerting
+- [ ] **Analytics** and performance monitoring
+- [ ] **Load balancing** for high availability
+- [ ] **Database** for transaction history
+- [ ] **Webhook notifications** for external services
+- [ ] **Documentation** for API integration
+
+---
+
+This specification serves as your complete integration reference. For questions or clarifications, refer to the test suite in `/test/test.js` for working examples of all functionality. 
