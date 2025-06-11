@@ -66,16 +66,29 @@ export class TransactionQueue {
     transferId?: number;
     errors?: string[];
   }> {
+    console.log("=== QUEUE: Processing transfer submission ===");
+    console.log("Transfer details:", {
+      from: transfer.from,
+      to: transfer.to,
+      amount: transfer.amount,
+      tokenAddress: transfer.tokenAddress || "ETH"
+    });
+    
     try {
       // Validate the transfer
+      console.log("Validating transfer signature and conditions...");
       const validation = await this.validator.validateSignedTransfer(transfer);
+      console.log("Validation result:", validation);
       
       if (!validation.isValid) {
+        console.log("Transfer validation failed:", validation.errors);
         return {
           success: false,
           errors: validation.errors
         };
       }
+
+      console.log("Transfer validation passed, storing in database...");
 
       // Store in database with "received" status
       const [insertedTransfer] = await db
@@ -88,9 +101,12 @@ export class TransactionQueue {
           deadline: transfer.deadline,
           signature: transfer.signature,
           contractAddress: transfer.contractAddress,
+          tokenAddress: transfer.tokenAddress || null,
           status: "received"
         })
         .returning();
+
+      console.log("Transfer stored in database with ID:", insertedTransfer.id);
 
       await this.logTransferEvent(
         insertedTransfer.id,
@@ -99,6 +115,7 @@ export class TransactionQueue {
       );
 
       // Immediate validation and status update
+      console.log("Updating transfer status to validated...");
       await db
         .update(signedTransfers)
         .set({ 
@@ -112,6 +129,8 @@ export class TransactionQueue {
         "validated",
         "Transfer validated and queued for execution"
       );
+
+      console.log("Transfer queued for execution with ID:", insertedTransfer.id);
 
       // Notify subscribers
       this.wsManager.broadcast("payment_accepted", {

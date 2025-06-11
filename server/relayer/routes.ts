@@ -56,7 +56,51 @@ export function createRelayerRoutes(queue: TransactionQueue): Router {
   // Apply rate limiting: 10 requests per minute
   router.use(rateLimit(10, 60000));
 
-  // Submit signed transfer for execution
+  // Submit signed transfer for execution (both endpoints for compatibility)
+  router.post("/submit", async (req, res) => {
+    console.log("=== RELAYER: Transfer submission received ===");
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
+    
+    try {
+      const validation = signedTransferSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        console.log("Validation failed:", validation.error.errors);
+        return res.status(400).json({
+          error: "Invalid transfer data",
+          details: validation.error.errors
+        });
+      }
+
+      const transfer: SignedTransferMessage = validation.data;
+      console.log("Validated transfer:", transfer);
+      
+      const result = await queue.submitTransfer(transfer);
+      console.log("Queue submission result:", result);
+
+      if (result.success) {
+        console.log(`Transfer ${result.transferId} accepted and queued`);
+        res.status(201).json({
+          success: true,
+          transferId: result.transferId,
+          message: "Transfer accepted and queued for execution"
+        });
+      } else {
+        console.log("Queue submission failed:", result.errors);
+        res.status(400).json({
+          success: false,
+          errors: result.errors
+        });
+      }
+    } catch (error: any) {
+      console.error("Error in transfer submission:", error);
+      res.status(500).json({
+        error: "Internal server error",
+        message: error.message
+      });
+    }
+  });
+
   router.post("/transfers", async (req, res) => {
     try {
       const validation = signedTransferSchema.safeParse(req.body);
