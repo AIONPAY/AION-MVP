@@ -53,10 +53,13 @@ export function SuccessModal({
           {/* Success Message */}
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold text-white">
-              Transfer Confirmed!
+              Transfer Signed & Submitted!
             </h2>
             <p className="text-green-400 font-semibold">
-              Confirmed in {confirmationTime}ms
+              Completed in {confirmationTime}ms
+            </p>
+            <p className="text-gray-400 text-sm">
+              Relayer is executing on blockchain
             </p>
           </div>
 
@@ -76,37 +79,44 @@ export function SuccessModal({
             </div>
           </div>
 
-          {/* Transaction Hash */}
+          {/* Transaction Status */}
           <div className="w-full space-y-2">
-            <label className="text-sm text-gray-400">Transaction Hash:</label>
+            <label className="text-sm text-gray-400">Transfer Status:</label>
             <div className="flex items-center space-x-2 bg-surface rounded-lg p-3">
-              <span className="text-sm font-mono text-white flex-1 truncate">
-                {txHash}
+              <span className="text-sm text-white flex-1">
+                {txHash.startsWith('pending-') ? 
+                  'Signed message submitted to relayer queue' : 
+                  `Transaction Hash: ${txHash}`
+                }
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={copyTxHash}
-                className="h-8 w-8 p-0 hover:bg-surface-light"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
+              {!txHash.startsWith('pending-') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={copyTxHash}
+                  className="h-8 w-8 p-0 hover:bg-surface-light"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
 
           {/* Action Buttons */}
           <div className="flex space-x-3 w-full">
-            <Button
-              variant="outline"
-              onClick={() => window.open(`https://sepolia.etherscan.io/tx/${txHash}`, '_blank')}
-              className="flex-1 border-surface hover:bg-surface"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              View on Etherscan
-            </Button>
+            {!txHash.startsWith('pending-') && (
+              <Button
+                variant="outline"
+                onClick={() => window.open(`https://sepolia.etherscan.io/tx/${txHash}`, '_blank')}
+                className="flex-1 border-surface hover:bg-surface"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                View on Etherscan
+              </Button>
+            )}
             <Button
               onClick={onClose}
-              className="flex-1 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+              className={`${txHash.startsWith('pending-') ? 'w-full' : 'flex-1'} bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90`}
             >
               Close
             </Button>
