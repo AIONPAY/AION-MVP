@@ -1,0 +1,44 @@
+Module "buffer" has been externalized for browser compatibility. Cannot access "buffer.Buffer" in client code. See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+WalletProvider - current state: 
+Object {isConnected: false, account: null, ethBalance: "0", isLoading: false}
+Dashboard - isConnected: false
+WalletConnection render - isConnected: false isLoading: false
+WalletProvider - Checking wallet connection...
+WalletProvider - Found accounts: 
+Array ["0x86c2a2f794325e5c8c7963876dbacba0f7a37056"]
+WalletProvider - Setting connected state for account: 0x86c2a2f794325e5c8c7963876dbacba0f7a37056
+WalletProvider - current state: 
+Object {isConnected: true, account: "0x86c2a2f794325e5c8c7963876dbacba0f7a37056", ethBalance: "0", isLoading: false}
+Dashboard - isConnected: true
+WalletConnection render - isConnected: true isLoading: false
+WalletProvider - Checking wallet connection...
+WalletProvider - Found accounts: 
+Array ["0x86c2a2f794325e5c8c7963876dbacba0f7a37056"]
+WalletProvider - Setting connected state for account: 0x86c2a2f794325e5c8c7963876dbacba0f7a37056
+Starting token info check for: 0x96F19aB2d96Cc1B30FeB30F15E97D1B6919D63B2
+`DialogContent` requires a `DialogTitle` for the component to be accessible for screen reader users.
+
+If you want to hide the `DialogTitle`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/dialog
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Instant transfer error: 
+Error {}
+message: "Token info timeout after 10s"
+stack: "Error: Token info timeout after 10s↵ at https://b4b22b1c-a92a-43b0-8512-bcb0fd8fe359-00-hy91ar17knz8.spock.replit.dev/src/components/InstantTransfer.tsx:94:52"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+
+at t.value (https://b4b22b1c-a92a-43b0-8512-bcb0fd8fe359-00-hy91ar17knz8.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://b4b22b1c-a92a-43b0-8512-bcb0fd8fe359-00-hy91ar17knz8.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://b4b22b1c-a92a-43b0-8512-bcb0fd8fe359-00-hy91ar17knz8.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://b4b22b1c-a92a-43b0-8512-bcb0fd8fe359-00-hy91ar17knz8.spock.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+WalletProvider - current state: 
+Object {isConnected: true, account: "0x86c2a2f794325e5c8c7963876dbacba0f7a37056", ethBalance: "0", isLoading: false}
+Dashboard - isConnected: true
+WalletConnection render - isConnected: true isLoading: false
+WalletProvider - current state: 
+Object {isConnected: true, account: "0x86c2a2f794325e5c8c7963876dbacba0f7a37056", ethBalance: "0", isLoading: false}
+Dashboard - isConnected: true
+WalletConnection render - isConnected: true isLoading: false

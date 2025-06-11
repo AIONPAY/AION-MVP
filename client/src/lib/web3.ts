@@ -6,11 +6,18 @@ declare global {
   }
 }
 
+// Fallback RPC for read operations when MetaMask is slow
+const FALLBACK_RPC_URL = "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161";
+
 export const getProvider = (): ethers.providers.Web3Provider | null => {
   if (typeof window !== "undefined" && window.ethereum) {
     return new ethers.providers.Web3Provider(window.ethereum);
   }
   return null;
+};
+
+export const getFallbackProvider = (): ethers.providers.JsonRpcProvider => {
+  return new ethers.providers.JsonRpcProvider(FALLBACK_RPC_URL);
 };
 
 export const getSigner = (): ethers.Signer | null => {
