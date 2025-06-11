@@ -25,6 +25,22 @@ const AION_ABI = [
       {"type": "bytes", "name": "signature"}
     ],
     "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "executeERC20Transfer",
+    "constant": false,
+    "payable": false,
+    "inputs": [
+      {"type": "address", "name": "token"},
+      {"type": "address", "name": "from"},
+      {"type": "address", "name": "to"},
+      {"type": "uint256", "name": "amount"},
+      {"type": "bytes32", "name": "nonce"},
+      {"type": "uint256", "name": "deadline"},
+      {"type": "bytes", "name": "signature"}
+    ],
+    "outputs": []
   }
 ];
 
@@ -88,6 +104,7 @@ export class TransactionExecutor {
         deadline: transfer.deadline,
         signature: transfer.signature,
         contractAddress: transfer.contractAddress,
+        tokenAddress: transfer.tokenAddress || undefined,
       };
 
       const validation = await this.validator.validateSignedTransfer(transferMessage);
@@ -100,17 +117,32 @@ export class TransactionExecutor {
       await this.updateTransferStatus(transferId, "pending");
       this.wsManager.broadcast("payment_pending", { transferId, txHash: null });
 
-      // Execute transaction
+      // Execute transaction based on transfer type
       const amountWei = ethers.utils.parseEther(transfer.amount);
+      let tx: ethers.ContractTransaction;
       
-      const tx = await this.contract.executeETHTransfer(
-        transfer.fromAddress,
-        transfer.toAddress,
-        amountWei,
-        transfer.nonce,
-        transfer.deadline,
-        transfer.signature
-      );
+      if (transfer.tokenAddress) {
+        // Execute ERC20 transfer
+        tx = await this.contract.executeERC20Transfer(
+          transfer.tokenAddress,
+          transfer.fromAddress,
+          transfer.toAddress,
+          amountWei,
+          transfer.nonce,
+          transfer.deadline,
+          transfer.signature
+        );
+      } else {
+        // Execute ETH transfer
+        tx = await this.contract.executeETHTransfer(
+          transfer.fromAddress,
+          transfer.toAddress,
+          amountWei,
+          transfer.nonce,
+          transfer.deadline,
+          transfer.signature
+        );
+      }
 
       // Update with transaction hash
       await db
