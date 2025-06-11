@@ -15,6 +15,7 @@ import {
   getTokenInfo,
   getTokenBalance,
   getTokenAllowance,
+  getLockedBalanceERC20,
   AION_CONTRACT_ADDRESS
 } from "@/lib/aion";
 import { LoadingModal } from "@/components/LoadingModal";
@@ -73,40 +74,56 @@ export function InstantTransfer() {
     setIsProcessing(true);
 
     try {
-      // Step 1: Get token info and check balance
+      // Step 1: Get token info and check balances
       setCurrentStep("Checking token information...");
       const tokenInfo = await getTokenInfo(data.tokenAddress);
       const balance = await getTokenBalance(data.tokenAddress, account);
+      const lockedBalance = await getLockedBalanceERC20(data.tokenAddress, account);
       const amountWei = ethers.utils.parseUnits(data.amount, tokenInfo.decimals);
 
-      if (balance.lt(amountWei)) {
-        throw new Error("Insufficient token balance");
-      }
+      console.log(`Token balance: ${ethers.utils.formatUnits(balance, tokenInfo.decimals)} ${tokenInfo.symbol}`);
+      console.log(`Locked balance: ${ethers.utils.formatUnits(lockedBalance, tokenInfo.decimals)} ${tokenInfo.symbol}`);
+      console.log(`Transfer amount: ${data.amount} ${tokenInfo.symbol}`);
 
-      // Step 2: Check and approve if needed
-      setCurrentStep("Checking token allowance...");
-      const allowance = await getTokenAllowance(data.tokenAddress, account, AION_CONTRACT_ADDRESS);
-      
-      if (allowance.lt(amountWei)) {
-        setCurrentStep("Approving token spending...");
-        const approveTx = await approveToken(data.tokenAddress, data.amount);
-        await approveTx.wait();
-        
+      // Check if user has sufficient locked funds
+      if (lockedBalance.gte(amountWei)) {
+        console.log("Sufficient locked funds found, skipping lock step");
         toast({
-          title: "Approval Successful",
-          description: "Token spending approved",
+          title: "Using Locked Funds",
+          description: `Using existing locked ${tokenInfo.symbol} balance`,
+        });
+      } else {
+        // Check wallet balance for locking additional funds
+        const neededAmount = amountWei.sub(lockedBalance);
+        if (balance.lt(neededAmount)) {
+          throw new Error(`Insufficient token balance. Need ${ethers.utils.formatUnits(neededAmount, tokenInfo.decimals)} more ${tokenInfo.symbol}`);
+        }
+
+        // Step 2: Check and approve if needed
+        setCurrentStep("Checking token allowance...");
+        const allowance = await getTokenAllowance(data.tokenAddress, account, AION_CONTRACT_ADDRESS);
+        
+        if (allowance.lt(neededAmount)) {
+          setCurrentStep("Approving token spending...");
+          const approveTx = await approveToken(data.tokenAddress, ethers.utils.formatUnits(neededAmount, tokenInfo.decimals));
+          await approveTx.wait();
+          
+          toast({
+            title: "Approval Successful",
+            description: "Token spending approved",
+          });
+        }
+
+        // Step 3: Lock additional tokens
+        setCurrentStep("Locking additional tokens...");
+        const lockTx = await lockFundsERC20(data.tokenAddress, ethers.utils.formatUnits(neededAmount, tokenInfo.decimals));
+        await lockTx.wait();
+
+        toast({
+          title: "Tokens Locked",
+          description: `${ethers.utils.formatUnits(neededAmount, tokenInfo.decimals)} ${tokenInfo.symbol} locked successfully`,
         });
       }
-
-      // Step 3: Lock tokens
-      setCurrentStep("Locking tokens...");
-      const lockTx = await lockFundsERC20(data.tokenAddress, data.amount);
-      await lockTx.wait();
-
-      toast({
-        title: "Tokens Locked",
-        description: `${data.amount} ${tokenInfo.symbol} locked successfully`,
-      });
 
       // Step 4: Create signed message
       setCurrentStep("Creating signed transfer...");
