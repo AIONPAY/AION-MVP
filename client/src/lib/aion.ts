@@ -428,8 +428,11 @@ export const createSignedTransfer = async (
     throw new Error("No signer available");
   }
 
-  // Generate unique nonce
-  const nonce = ethers.utils.randomBytes(32);
+  // Generate unique nonce combining timestamp, address, and random data
+  const timestamp = Date.now();
+  const randomPart = ethers.utils.randomBytes(16);
+  const addressPart = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(from + timestamp.toString()));
+  const nonce = ethers.utils.keccak256(ethers.utils.concat([randomPart, addressPart]));
   
   // Set deadline (5 minutes from now)
   const deadline = Math.floor(Date.now() / 1000) + 300;
