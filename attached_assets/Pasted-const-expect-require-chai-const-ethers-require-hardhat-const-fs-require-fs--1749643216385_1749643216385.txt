@@ -1,0 +1,336 @@
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+const fs = require("fs");
+
+describe("AION", function () {
+  let AION, ERC20Mock, tokenX, tokenY, aion, owner, addr1, addr2, addr3;
+  let gasCosts = [];
+  const WITHDRAWAL_DELAY = 10 * 60; // 10 minutes in seconds
+
+  async function recordGasCost(testName, tx) {
+    const receipt = await tx.wait();
+    const gasUsed = receipt.gasUsed.mul(receipt.effectiveGasPrice);
+    gasCosts.push({ testName, gasUsed: gasUsed.toString() });
+  }
+
+  beforeEach(async function () {
+    AION = await ethers.getContractFactory("AION");
+    ERC20Mock = await ethers.getContractFactory("ERC20Mock");
+    [owner, addr1, addr2, addr3] = await ethers.getSigners();
+    aion = await AION.deploy();
+    tokenX = await ERC20Mock.deploy("MockTokenX", "MTKX", ethers.utils.parseEther("1000"));
+    tokenY = await ERC20Mock.deploy("MockTokenY", "MTKY", ethers.utils.parseEther("1000"));
+    await aion.deployed();
+    await tokenX.deployed();
+    await tokenY.deployed();
+  });
+
+  after(async function () {
+    fs.writeFileSync("gas_costs.csv", "Test Case,Gas Cost\n");
+    gasCosts.forEach(({ testName, gasUsed }) => {
+      fs.appendFileSync("gas_costs.csv", `${testName},${gasUsed}\n`);
+    });
+  });
+
+  describe("Lock Funds", function () {
+    it("should lock ETH funds", async function () {
+      const tx = await aion.connect(addr1).lockFundsETH({ value: ethers.utils.parseEther("2.0") });
+      await recordGasCost("should lock ETH funds", tx);
+      const balance = await aion.lockedFundsETH(addr1.address);
+      expect(balance).to.equal(ethers.utils.parseEther("2.0"));
+    });
+
+    it("should lock ERC20 funds", async function () {
+      await tokenX.connect(owner).transfer(addr1.address, ethers.utils.parseEther("10.0"));
+      await tokenX.connect(addr1).approve(aion.address, ethers.utils.parseEther("2.0"));
+      const tx = await aion.connect(addr1).lockFundsERC20(tokenX.address, ethers.utils.parseEther("2.0"));
+      await recordGasCost("should lock ERC20 funds", tx);
+      const balance = await aion.lockedFundsERC20(tokenX.address, addr1.address);
+      expect(balance).to.equal(ethers.utils.parseEther("2.0"));
+    });
+  });
+
+  describe("Initiate Withdrawal", function () {
+    it("should initiate ETH withdrawal", async function () {
+      await aion.connect(addr1).lockFundsETH({ value: ethers.utils.parseEther("1.0") });
+      const tx = await aion.connect(addr1).initiateWithdrawal();
+      await recordGasCost("should initiate ETH withdrawal", tx);
+      const timestamp = await aion.withdrawTimestamps(addr1.address);
+      expect(timestamp).to.be.above(0);
+    });
+  });
+
+  describe("Withdraw Funds", function () {
+    it("should not allow ETH withdrawal before delay", async function () {
+      await aion.connect(addr1).lockFundsETH({ value: ethers.utils.parseEther("2.0") });
+      await aion.connect(addr1).initiateWithdrawal();
+      await expect(aion.connect(addr1).withdrawFundsETH()).to.be.revertedWith("Withdrawal delay not met");
+    });
+
+    it("should withdraw ETH funds after delay", async function () {
+      await aion.connect(addr1).lockFundsETH({ value: ethers.utils.parseEther("2.0") });
+      await aion.connect(addr1).initiateWithdrawal();
+      await ethers.provider.send("evm_increaseTime", [WITHDRAWAL_DELAY]); // Increase time by 10 minutes
+      await ethers.provider.send("evm_mine"); // Mine a block to reflect the time increase
+      const tx = await aion.connect(addr1).withdrawFundsETH();
+      await recordGasCost("should withdraw ETH funds after delay", tx);
+      const balance = await aion.lockedFundsETH(addr1.address);
+      expect(balance).to.equal(0);
+    });
+  });
+
+  describe("Execute Transfers", function () {
+    let deadline;
+
+    beforeEach(async () => {
+      const blockNum = await ethers.provider.getBlockNumber();
+      const block = await ethers.provider.getBlock(blockNum);
+      deadline = block.timestamp + 300; // 5 minutes from now
+    });
+
+    it("should execute ETH transfer with valid user signature", async function () {
+      await aion.connect(addr1).lockFundsETH({ value: ethers.utils.parseEther("2.0") });
+      const nonce = ethers.utils.formatBytes32String("unique_nonce_1");
+
+      const messageHash = ethers.utils.solidityKeccak256(
+        ["address", "address", "uint256", "bytes32", "uint256", "address"],
+        [addr1.address, addr2.address, ethers.utils.parseEther("1.0"), nonce, deadline, aion.address]
+      );
+      const signature = await addr1.signMessage(ethers.utils.arrayify(messageHash));
+
+      const tx = await aion.connect(addr2).executeETHTransfer(
+        addr1.address,
+        addr2.address,
+        ethers.utils.parseEther("1.0"),
+        nonce,
+        deadline,
+        signature
+      );
+      await recordGasCost("should execute ETH transfer with valid user signature", tx);
+
+      const balance = await aion.lockedFundsETH(addr1.address);
+      expect(balance).to.equal(ethers.utils.parseEther("1.0"));
+    });
+    
+    it("should execute ERC20 transfer with valid user signature", async function () {
+      await tokenX.connect(owner).transfer(addr1.address, ethers.utils.parseEther("10.0"));
+      await tokenX.connect(addr1).approve(aion.address, ethers.utils.parseEther("2.0"));
+      await aion.connect(addr1).lockFundsERC20(tokenX.address, ethers.utils.parseEther("2.0"));
+
+      const nonce = ethers.utils.formatBytes32String("unique_nonce_erc20");
+      const messageHash = ethers.utils.solidityKeccak256(
+        ["address", "address", "address", "uint256", "bytes32", "uint256", "address"],
+        [tokenX.address, addr1.address, addr2.address, ethers.utils.parseEther("1.0"), nonce, deadline, aion.address]
+      );
+      const signature = await addr1.signMessage(ethers.utils.arrayify(messageHash));
+      
+      const tx = await aion.connect(addr2).executeERC20Transfer(
+        tokenX.address,
+        addr1.address,
+        addr2.address,
+        ethers.utils.parseEther("1.0"),
+        nonce,
+        deadline,
+        signature
+      );
+      await recordGasCost("should execute ERC20 transfer with valid user signature", tx);
+
+      const balance = await aion.lockedFundsERC20(tokenX.address, addr1.address);
+      expect(balance).to.equal(ethers.utils.parseEther("1.0"));
+    });
+
+    it("should fail when signature deadline is expired", async function () {
+      await aion.connect(addr1).lockFundsETH({ value: ethers.utils.parseEther("2.0") });
+      const nonce = ethers.utils.formatBytes32String("exp_nonce");
+      
+      const expiredDeadline = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp - 1;
+
+      const messageHash = ethers.utils.solidityKeccak256(
+        ["address", "address", "uint256", "bytes32", "uint256", "address"],
+        [addr1.address, addr2.address, ethers.utils.parseEther("1.0"), nonce, expiredDeadline, aion.address]
+      );
+      const signature = await addr1.signMessage(ethers.utils.arrayify(messageHash));
+
+      await expect(
+        aion.connect(addr2).executeETHTransfer(
+          addr1.address,
+          addr2.address,
+          ethers.utils.parseEther("1.0"),
+          nonce,
+          expiredDeadline,
+          signature
+        )
+      ).to.be.revertedWith("AION: SIGNATURE_EXPIRED");
+    });
+
+    it("should fail when nonce is reused", async function () {
+      await aion.connect(addr1).lockFundsETH({ value: ethers.utils.parseEther("2.0") });
+      const nonce = ethers.utils.formatBytes32String("reuse_nonce");
+      const messageHash = ethers.utils.solidityKeccak256(
+        ["address", "address", "uint256", "bytes32", "uint256", "address"],
+        [addr1.address, addr2.address, ethers.utils.parseEther("1.0"), nonce, deadline, aion.address]
+      );
+      const signature = await addr1.signMessage(ethers.utils.arrayify(messageHash));
+
+      await aion.connect(addr2).executeETHTransfer(
+        addr1.address,
+        addr2.address,
+        ethers.utils.parseEther("1.0"),
+        nonce,
+        deadline,
+        signature
+      );
+
+      await expect(
+        aion.connect(addr2).executeETHTransfer(
+          addr1.address,
+          addr2.address,
+          ethers.utils.parseEther("1.0"),
+          nonce,
+          deadline,
+          signature
+        )
+      ).to.be.revertedWith("Nonce already used");
+    });
+
+    it("should ALLOW transfer if sender initiates withdrawal WITHIN grace period", async function () {
+      await aion.connect(addr1).lockFundsETH({ value: ethers.utils.parseEther("2.0") });
+      
+      // 1. Sender initiates withdrawal
+      await aion.connect(addr1).initiateWithdrawal();
+
+      // 2. We are still within the grace period (5 mins)
+      const nonce = ethers.utils.formatBytes32String("grace_nonce");
+      const messageHash = ethers.utils.solidityKeccak256(
+        ["address", "address", "uint256", "bytes32", "uint256", "address"],
+        [addr1.address, addr2.address, ethers.utils.parseEther("1.0"), nonce, deadline, aion.address]
+      );
+      const signature = await addr1.signMessage(ethers.utils.arrayify(messageHash));
+
+      // 3. The transfer should still succeed
+      await expect(aion.connect(addr2).executeETHTransfer(
+        addr1.address,
+        addr2.address,
+        ethers.utils.parseEther("1.0"),
+        nonce,
+        deadline,
+        signature
+      )).to.not.be.reverted;
+
+      const balance = await aion.lockedFundsETH(addr1.address);
+      expect(balance).to.equal(ethers.utils.parseEther("1.0"));
+    });
+
+    it("should REJECT transfer if sender initiates withdrawal AFTER grace period", async function () {
+      await aion.connect(addr1).lockFundsETH({ value: ethers.utils.parseEther("2.0") });
+      
+      // 1. Sender initiates withdrawal
+      await aion.connect(addr1).initiateWithdrawal();
+      
+      // 2. Move time forward to be outside the grace period (e.g., 6 minutes)
+      await ethers.provider.send("evm_increaseTime", [6 * 60]);
+      await ethers.provider.send("evm_mine");
+
+      const nonce = ethers.utils.formatBytes32String("no_grace_nonce");
+      const messageHash = ethers.utils.solidityKeccak256(
+        ["address", "address", "uint256", "bytes32", "uint256", "address"],
+        [addr1.address, addr2.address, ethers.utils.parseEther("1.0"), nonce, deadline, aion.address]
+      );
+      const signature = await addr1.signMessage(ethers.utils.arrayify(messageHash));
+
+      // 3. The transfer should now be reverted
+      await expect(
+        aion.connect(addr2).executeETHTransfer(
+          addr1.address,
+          addr2.address,
+          ethers.utils.parseEther("1.0"),
+          nonce,
+          deadline,
+          signature
+        )
+      ).to.be.revertedWith("AION: SENDER_WITHDRAWAL_LOCKOUT");
+    });
+  });
+
+  describe("Wrapping and Unwrapping", function () {
+    beforeEach(async () => {
+      // give addr1 some tokenX and approve the aion contract
+      await tokenX.connect(owner).transfer(addr1.address, ethers.utils.parseEther("100.0"));
+      await tokenX.connect(addr1).approve(aion.address, ethers.utils.parseEther("100.0"));
+    });
+
+    it("should lock funds and mint a new non-transferable wrapped token", async function () {
+      const tx = aion.connect(addr1).lockAndWrapERC20(tokenX.address, ethers.utils.parseEther("10.0"));
+      
+      await expect(tx).to.emit(aion, "WrappedTokenCreated");
+      await recordGasCost("should lock funds and mint a new non-transferable wrapped token", await tx);
+
+      const wrappedTokenAddress = await aion.wrappedTokenFor(tokenX.address);
+      expect(wrappedTokenAddress).to.not.equal(ethers.constants.AddressZero);
+
+      const wrappedToken = await ethers.getContractAt("NonTransferableERC20", wrappedTokenAddress);
+      
+      expect(await wrappedToken.name()).to.equal("WRPDMockTokenX");
+      expect(await wrappedToken.symbol()).to.equal("WRPDMTKX");
+
+      const wrappedBalance = await wrappedToken.balanceOf(addr1.address);
+      expect(wrappedBalance).to.equal(ethers.utils.parseEther("10.0"));
+
+      const underlyingBalance = await tokenX.balanceOf(aion.address);
+      expect(underlyingBalance).to.equal(ethers.utils.parseEther("10.0"));
+    });
+
+    it("should prevent transfer of the wrapped token between users", async function () {
+      await aion.connect(addr1).lockAndWrapERC20(tokenX.address, ethers.utils.parseEther("10.0"));
+      const wrappedTokenAddress = await aion.wrappedTokenFor(tokenX.address);
+      const wrappedToken = await ethers.getContractAt("NonTransferableERC20", wrappedTokenAddress);
+
+      await expect(wrappedToken.connect(addr1).transfer(addr2.address, ethers.utils.parseEther("1.0")))
+        .to.be.revertedWith("NonTransferableERC20: This token is non-transferable");
+    });
+    
+    it("should unwrap tokens and allow withdrawal after delay", async function () {
+      // 1. Lock and Wrap
+      await aion.connect(addr1).lockAndWrapERC20(tokenX.address, ethers.utils.parseEther("10.0"));
+      const wrappedTokenAddress = await aion.wrappedTokenFor(tokenX.address);
+      const wrappedToken = await ethers.getContractAt("NonTransferableERC20", wrappedTokenAddress);
+
+      // 2. Approve AION to burn the wrapped tokens
+      await wrappedToken.connect(addr1).approve(aion.address, ethers.utils.parseEther("10.0"));
+      
+      // 3. Unwrap and unlock
+      const txUnwrap = await aion.connect(addr1).unwrapAndUnlockERC20(tokenX.address, ethers.utils.parseEther("10.0"));
+      await recordGasCost("should unwrap tokens and allow withdrawal after delay", txUnwrap);
+
+      const wrappedBalance = await wrappedToken.balanceOf(addr1.address);
+      expect(wrappedBalance).to.equal(0);
+
+      const timestamp = await aion.withdrawTimestampsERC20(addr1.address, tokenX.address);
+      expect(timestamp).to.be.above(0);
+
+      // 4. Wait for delay
+      await ethers.provider.send("evm_increaseTime", [WITHDRAWAL_DELAY]);
+      await ethers.provider.send("evm_mine");
+
+      // 5. Withdraw underlying tokens
+      const initialUserBalance = await tokenX.balanceOf(addr1.address);
+      await aion.connect(addr1).withdrawFundsERC20(tokenX.address);
+      const finalUserBalance = await tokenX.balanceOf(addr1.address);
+      
+      expect(finalUserBalance.sub(initialUserBalance)).to.equal(ethers.utils.parseEther("10.0"));
+      const finalContractBalance = await tokenX.balanceOf(aion.address);
+      expect(finalContractBalance).to.equal(0);
+    });
+
+    it("should fail to unwrap if AION contract is not approved to spend wrapped token", async function() {
+      await aion.connect(addr1).lockAndWrapERC20(tokenX.address, ethers.utils.parseEther("10.0"));
+      
+      // Note: No approval is given
+      const wrappedTokenAddress = await aion.wrappedTokenFor(tokenX.address);
+      const wrappedToken = await ethers.getContractAt("NonTransferableERC20", wrappedTokenAddress);
+      
+      await expect(aion.connect(addr1).unwrapAndUnlockERC20(tokenX.address, ethers.utils.parseEther("10.0")))
+        .to.be.revertedWith("ERC20InsufficientAllowance");
+    });
+  });
+});

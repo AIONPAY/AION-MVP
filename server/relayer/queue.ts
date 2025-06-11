@@ -161,6 +161,7 @@ export class TransactionQueue {
 
   private async processQueue(): Promise<void> {
     if (!this.isProcessing || this.currentExecutions >= this.maxConcurrentExecutions) {
+      console.log(`Queue processing skipped - processing: ${this.isProcessing}, executions: ${this.currentExecutions}/${this.maxConcurrentExecutions}`);
       return;
     }
 
@@ -173,15 +174,19 @@ export class TransactionQueue {
         .orderBy(signedTransfers.createdAt)
         .limit(this.maxConcurrentExecutions - this.currentExecutions);
 
+      console.log(`=== QUEUE PROCESSING: Found ${pendingTransfers.length} validated transfers ===`);
+
       for (const transfer of pendingTransfers) {
         if (this.currentExecutions >= this.maxConcurrentExecutions) break;
         
+        console.log(`Starting execution of transfer ${transfer.id}`);
         this.currentExecutions++;
         
         // Execute in background
         this.executeTransferAsync(transfer.id)
           .finally(() => {
             this.currentExecutions--;
+            console.log(`Finished execution of transfer ${transfer.id}`);
           });
       }
 

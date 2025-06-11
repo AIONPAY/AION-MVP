@@ -1,0 +1,78 @@
+Of course! Let's walk through the entire lifecycle of a signed ERC20 transfer, from the moment a user decides to lock their tokens to the moment the recipient has ownership of them within the AION protocol.
+
+This process is designed to give the sender a "gasless" experience and the recipient **instant assurance** of payment.
+
+### The Actors
+*   **Alice (The Sender):** Owns 100 `USDC` tokens and wants to send 10 `USDC` to Bob.
+*   **Bob (The Recipient):** Wants to receive 10 `USDC` from Alice instantly.
+*   **AION Contract:** The smart contract holding the locked funds.
+*   **AION Relayer:** The backend service that pays the gas to execute the transaction.
+
+---
+
+### 🗺️ The End-to-End Flow
+
+Here is a diagram illustrating the complete process:
+
+
+Ran tool
+### **Step 1: Alice Locks Her `USDC` (One-Time Action)**
+
+Before Alice can make a gasless payment, she must first deposit her `USDC` into the AION contract. This gives the contract custody of the tokens, enabling it to re-assign ownership later.
+
+1.  **Approve:** Alice sends a transaction to the `USDC` contract, calling `approve()`. This gives the AION contract permission to pull up to 100 `USDC` from her wallet. **(Alice pays gas for this)**.
+2.  **Lock:** Alice sends a second transaction, this time to the AION contract, calling `lockFundsERC20()`. The AION contract uses the approval it just received to transfer 100 `USDC` from Alice's wallet into the AION contract itself. **(Alice pays gas for this)**.
+
+**Outcome:** The AION contract now holds 100 `USDC`. Its internal ledger shows: `lockedFundsERC20[Alice's Address][USDC Address] = 100`.
+
+---
+
+### **Step 2: Alice Creates a Signed Payment (Off-Chain & Gasless)**
+
+Now, Alice wants to send 10 `USDC` to Bob. This part is completely off-chain and requires no gas from Alice.
+
+1.  **Construct Message:** Alice's wallet/frontend creates a JSON object with the payment details:
+    *   `from`: Alice's address
+    *   `to`: Bob's address
+    *   `tokenAddress`: The `USDC` contract address
+    *   `amount`: `10` (in the token's base units)
+    *   `nonce`: A new, unique random value to prevent this payment from ever being replayed.
+    *   `deadline`: A timestamp (e.g., 10 minutes from now) after which the signature becomes invalid.
+2.  **Sign Hash:** Her wallet creates a cryptographic hash of this data. Alice signs this hash with her private key. The resulting `signature` is a mathematical proof that she authorized this specific payment.
+3.  **Send to Relayer:** Alice sends the complete `signedMessage` (the JSON data + her signature) to the AION Relayer's API endpoint (`POST /api/relay`).
+
+**Outcome:** A self-contained, verifiable "payment instruction" has been created and sent. Alice's work is done.
+
+---
+
+### **Step 3: Relayer Validates and Gives Bob Instant Assurance**
+
+This is the "instant settlement" magic. The relayer doesn't wait for the blockchain.
+
+1.  **Receive & Validate:** The Relayer receives the message and performs immediate pre-flight checks:
+    *   Is the deadline valid?
+    *   Is the nonce unused?
+    *   Does Alice have at least 10 locked `USDC`?
+    *   Is Alice currently withdrawing funds (outside the grace period)?
+    *   Is the signature mathematically valid and from Alice?
+2.  **Instant Notification:** If all checks pass, the relayer immediately does two things:
+    *   Sends a `202 Accepted` response to Alice.
+    *   Pushes a **`payment_accepted`** event via WebSocket to Bob's connected wallet, telling him a valid 10 `USDC` payment is on its way.
+
+**Outcome:** Bob gets **instant assurance**. He knows with cryptographic certainty that a valid transaction is pending and will be executed. He can confidently ship a product or provide a service without waiting for on-chain confirmation.
+
+---
+
+### **Step 4: Relayer Executes the Transaction (On-Chain)**
+
+The relayer now takes on the responsibility of paying the gas to make the transaction official on the blockchain.
+
+1.  **Execute:** The relayer submits a transaction to the AION contract, calling `executeERC20Transfer()` and passing in all the data from Alice's signed message. **(The Relayer pays the gas for this)**.
+2.  **Contract Verification:** The AION smart contract independently re-runs all the same validation checks. It trusts no one, not even the relayer.
+3.  **Update Balances:** If the on-chain verification succeeds, the contract updates its internal ledger:
+    *   `lockedFundsERC20[Alice's Address][USDC Address]` is decreased by 10.
+    *   `lockedFundsERC20[Bob's Address][USDC Address]` is increased by 10.
+    *   The nonce is marked as used to make it non-replayable.
+4.  **Final Confirmation:** Once the transaction is mined, the relayer sees it and pushes a final **`payment_confirmed`** event to Bob via WebSocket, including the official transaction hash.
+
+**Final Outcome:** The ownership of 10 `USDC` has been transferred from Alice to Bob **within the AION protocol**. The actual `USDC` tokens never left the AION contract; only the internal accounting of who owns them changed. Bob can now use his 10 `USDC` balance to make his own gasless payments or withdraw them to his wallet.
