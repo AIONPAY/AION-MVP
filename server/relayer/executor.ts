@@ -111,6 +111,24 @@ export class TransactionExecutor {
       if (!validation.isValid) {
         const errors = validation.errors.join("; ");
         
+        // Check if this transfer was already executed successfully
+        // This can happen due to race conditions or retries
+        if (errors.includes("Nonce already used") && transfer.txHash && transfer.blockNumber) {
+          console.log(`=== EXECUTOR: Transfer ${transferId} already executed successfully ===`);
+          console.log(`TX Hash: ${transfer.txHash}, Block: ${transfer.blockNumber}`);
+          
+          // Update status to confirmed if it's not already
+          if (transfer.status !== "confirmed") {
+            await this.updateTransferStatus(transferId, "confirmed");
+          }
+          
+          return { 
+            success: true, 
+            txHash: transfer.txHash, 
+            blockNumber: transfer.blockNumber 
+          };
+        }
+        
         // Check for non-retryable errors
         const nonRetryableErrors = ["Nonce already used", "Transfer deadline has expired"];
         const isNonRetryable = nonRetryableErrors.some(error => errors.includes(error));
