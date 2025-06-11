@@ -3,8 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send, PenTool } from "lucide-react";
-import { createSignedTransfer } from "@/lib/aion";
+import { createSignedTransfer, createSignedERC20Transfer } from "@/lib/aion";
 import { useWallet } from "@/hooks/useWallet";
 import { useAION } from "@/hooks/useAION";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +14,8 @@ import { LoadingModal } from "./LoadingModal";
 export function CreateTransfer() {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
+  const [transferType, setTransferType] = useState("ETH");
+  const [tokenAddress, setTokenAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { isConnected, account } = useWallet();
   const { gracePeriodActive } = useAION(account);
@@ -30,20 +33,36 @@ export function CreateTransfer() {
       return;
     }
 
+    if (transferType === "ERC20" && !tokenAddress) {
+      toast({
+        title: "Invalid Input",
+        description: "Please enter a token address for ERC20 transfers",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const signedMessage = await createSignedTransfer(account, recipient, amount);
+      let signedMessage;
+      
+      if (transferType === "ETH") {
+        signedMessage = await createSignedTransfer(account, recipient, amount);
+      } else {
+        signedMessage = await createSignedERC20Transfer(tokenAddress, account, recipient, amount);
+      }
       
       // Store in localStorage for easy access
       localStorage.setItem("latestSignedTransfer", JSON.stringify(signedMessage, null, 2));
       
       toast({
         title: "Transfer Created",
-        description: "Signed transfer message has been created and saved",
+        description: `Signed ${transferType} transfer message has been created and saved`,
       });
       
       setRecipient("");
       setAmount("");
+      if (transferType === "ERC20") setTokenAddress("");
     } catch (error: any) {
       toast({
         title: "Failed to Create Transfer",
@@ -66,6 +85,32 @@ export function CreateTransfer() {
           
           <div className="space-y-4">
             <div>
+              <Label className="text-sm text-gray-400 mb-2">Transfer Type</Label>
+              <Select value={transferType} onValueChange={setTransferType}>
+                <SelectTrigger className="bg-surface border-surface-light text-white">
+                  <SelectValue placeholder="Select transfer type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ETH">ETH</SelectItem>
+                  <SelectItem value="ERC20">ERC20 Token</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {transferType === "ERC20" && (
+              <div>
+                <Label className="text-sm text-gray-400 mb-2">Token Address</Label>
+                <Input
+                  type="text"
+                  value={tokenAddress}
+                  onChange={(e) => setTokenAddress(e.target.value)}
+                  className="bg-surface border-surface-light text-white placeholder-gray-400"
+                  placeholder="0x..."
+                />
+              </div>
+            )}
+            
+            <div>
               <Label className="text-sm text-gray-400 mb-2">Recipient Address</Label>
               <Input
                 type="text"
@@ -77,7 +122,9 @@ export function CreateTransfer() {
             </div>
             
             <div>
-              <Label className="text-sm text-gray-400 mb-2">Amount (ETH)</Label>
+              <Label className="text-sm text-gray-400 mb-2">
+                Amount ({transferType === "ETH" ? "ETH" : "Tokens"})
+              </Label>
               <div className="relative">
                 <Input
                   type="number"
@@ -88,7 +135,9 @@ export function CreateTransfer() {
                   step="0.001"
                   min="0"
                 />
-                <span className="absolute right-3 top-3 text-gray-400 text-sm">ETH</span>
+                <span className="absolute right-3 top-3 text-gray-400 text-sm">
+                  {transferType === "ETH" ? "ETH" : "Tokens"}
+                </span>
               </div>
             </div>
             
