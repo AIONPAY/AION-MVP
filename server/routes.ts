@@ -4,6 +4,9 @@ import { storage } from "./storage";
 import { TransactionQueue } from "./relayer/queue";
 import { WebSocketManager } from "./relayer/websocket";
 import { createRelayerRoutes } from "./relayer/routes";
+import { db } from "./db";
+import { signedTransfers } from "@shared/schema";
+import { eq, or, desc } from "drizzle-orm";
 
 // Utility function to validate private key
 function validatePrivateKey(privateKey: string): string {
@@ -68,6 +71,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register relayer API routes
   app.use("/api/relayer", createRelayerRoutes(transactionQueue));
+
+  // Transaction history endpoint
+  app.get("/api/transactions/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      
+      // Get transfers for this address (both sent and received)
+      const transfers = await db
+        .select({
+          id: signedTransfers.id,
+          fromAddress: signedTransfers.fromAddress,
+          toAddress: signedTransfers.toAddress,
+          amount: signedTransfers.amount,
+          status: signedTransfers.status,
+          txHash: signedTransfers.txHash,
+          blockNumber: signedTransfers.blockNumber,
+          tokenAddress: signedTransfers.tokenAddress,
+          createdAt: signedTransfers.createdAt,
+          confirmedAt: signedTransfers.confirmedAt
+        })
+        .from(signedTransfers)
+        .where(
+          or(
+            eq(signedTransfers.fromAddress, address.toLowerCase()),
+            eq(signedTransfers.toAddress, address.toLowerCase())
+          )
+        )
+        .orderBy(desc(signedTransfers.createdAt))
+        .limit(50);
+
+      res.json({ transactions: transfers });
+    } catch (error) {
+      console.error("Error fetching transaction history:", error);
+      res.status(500).json({ error: "Failed to fetch transaction history" });
+    }
+  });
 
   // Health check endpoint
   app.get("/api/health", (req, res) => {

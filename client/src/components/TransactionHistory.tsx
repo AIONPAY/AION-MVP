@@ -2,50 +2,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { List, Lock, Send, Play, ArrowUp, ExternalLink } from "lucide-react";
 import { formatAddress } from "@/lib/web3";
+import { useQuery } from "@tanstack/react-query";
+import { useWallet } from "@/contexts/WalletContext";
+
+interface DatabaseTransaction {
+  id: number;
+  fromAddress: string;
+  toAddress: string;
+  amount: string;
+  status: string;
+  txHash: string | null;
+  blockNumber: number | null;
+  tokenAddress: string | null;
+  createdAt: string;
+  confirmedAt: string | null;
+}
 
 interface Transaction {
   id: string;
-  type: 'lock' | 'transfer' | 'execute' | 'withdrawal';
+  type: 'transfer';
   from: string;
-  to?: string;
+  to: string;
   amount: string;
-  status: 'pending' | 'confirmed' | 'failed';
+  status: 'pending' | 'confirmed' | 'failed' | 'validated' | 'permanently_failed';
   timestamp: string;
   txHash?: string;
+  tokenAddress?: string;
 }
-
-// Mock data - in real app this would come from API or events
-const mockTransactions: Transaction[] = [
-  {
-    id: "1",
-    type: "lock",
-    from: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    to: "Contract",
-    amount: "2.500",
-    status: "confirmed",
-    timestamp: "2h ago",
-    txHash: "0xabc123...def789"
-  },
-  {
-    id: "2",
-    type: "transfer",
-    from: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    to: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-    amount: "1.000",
-    status: "pending",
-    timestamp: "5h ago"
-  },
-  {
-    id: "3",
-    type: "execute",
-    from: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    to: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
-    amount: "0.750",
-    status: "confirmed",
-    timestamp: "1d ago",
-    txHash: "0xdef456...abc123"
-  }
-];
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -67,15 +50,55 @@ const getStatusBadge = (status: string) => {
     case 'confirmed':
       return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Confirmed</Badge>;
     case 'pending':
+    case 'validated':
       return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Pending</Badge>;
     case 'failed':
+    case 'permanently_failed':
       return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Failed</Badge>;
     default:
-      return null;
+      return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">{status}</Badge>;
   }
 };
 
+const formatTimestamp = (timestamp: string) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+};
+
 export function TransactionHistory() {
+  const { account } = useWallet();
+  
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['transactions', account],
+    queryFn: async () => {
+      if (!account) return { transactions: [] };
+      const response = await fetch(`/api/transactions/${account}`);
+      if (!response.ok) throw new Error('Failed to fetch transactions');
+      return response.json();
+    },
+    enabled: !!account,
+    refetchInterval: 10000, // Refetch every 10 seconds
+  });
+
+  const transactions: Transaction[] = (data?.transactions || []).map((tx: DatabaseTransaction) => ({
+    id: tx.id.toString(),
+    type: 'transfer' as const,
+    from: tx.fromAddress,
+    to: tx.toAddress,
+    amount: parseFloat(tx.amount).toFixed(3),
+    status: tx.status as Transaction['status'],
+    timestamp: formatTimestamp(tx.createdAt),
+    txHash: tx.txHash || undefined,
+    tokenAddress: tx.tokenAddress || undefined,
+  }));
   return (
     <Card className="mt-8 bg-dark-light border-surface overflow-hidden">
       <div className="p-6 border-b border-surface">
