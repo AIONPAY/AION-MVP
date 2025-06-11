@@ -51,7 +51,7 @@ const getStatusBadge = (status: string) => {
       return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Confirmed</Badge>;
     case 'pending':
     case 'validated':
-      return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Pending</Badge>;
+      return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Sequencing</Badge>;
     case 'failed':
     case 'permanently_failed':
       return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Failed</Badge>;
