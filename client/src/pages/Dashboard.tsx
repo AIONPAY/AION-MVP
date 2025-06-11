@@ -102,7 +102,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 {/* ETH functionality removed - ERC20 only */}
-                <LockFundsERC20 />
+                {/* LockFundsERC20 removed - InstantTransfer handles lock+transfer in one step */}
                 <InstantTransfer />
                 <WithdrawFunds />
               </div>
