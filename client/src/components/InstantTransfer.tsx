@@ -281,7 +281,7 @@ export function InstantTransfer() {
                 disabled={!isConnected || isProcessing}
                 className="w-full bg-primary hover:bg-primary/90 text-white"
               >
-                {isProcessing ? "Processing..." : "Lock & Transfer Instantly"}
+                {isProcessing ? "Processing..." : "Transfer Now"}
               </Button>
 
               {!isConnected && (

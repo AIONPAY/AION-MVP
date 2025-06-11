@@ -6,6 +6,7 @@ import { LockFundsERC20 } from "@/components/LockFundsERC20";
 // import { ExecuteTransfer } from "@/components/ExecuteTransfer"; // ETH functionality removed
 import { WithdrawFunds } from "@/components/WithdrawFunds";
 import { InstantTransfer } from "@/components/InstantTransfer";
+import { USDTInstantTransfer } from "@/components/USDTInstantTransfer";
 // import { InstantTransferETH } from "@/components/InstantTransferETH"; // ETH functionality removed
 // import { SignAndSend } from "@/components/SignAndSend"; // ETH functionality removed
 import { TransactionHistory } from "@/components/TransactionHistory";
@@ -102,6 +103,7 @@ export default function Dashboard() {
               <div className="lg:col-span-2 space-y-6">
                 {/* ETH functionality removed - ERC20 only */}
                 <LockFundsERC20 />
+                <USDTInstantTransfer />
                 <InstantTransfer />
                 <WithdrawFunds />
               </div>
