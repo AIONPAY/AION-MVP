@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { signedTransfers, transactionLogs } from "@shared/schema";
-import { eq, and, lt } from "drizzle-orm";
+import { eq, and, lt, not } from "drizzle-orm";
 import { TransactionExecutor } from "./executor";
 import { TransferValidator, SignedTransferMessage } from "./validator";
 // WebSocketManager type definition
@@ -166,16 +166,11 @@ export class TransactionQueue {
     }
 
     try {
-      // Get next validated transfer to process (exclude permanently failed)
+      // Get next validated transfer to process
       const pendingTransfers = await db
         .select()
         .from(signedTransfers)
-        .where(
-          and(
-            eq(signedTransfers.status, "validated"),
-            not(eq(signedTransfers.status, "permanently_failed"))
-          )
-        )
+        .where(eq(signedTransfers.status, "validated"))
         .orderBy(signedTransfers.createdAt)
         .limit(this.maxConcurrentExecutions - this.currentExecutions);
 
