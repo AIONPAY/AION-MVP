@@ -109,8 +109,20 @@ export class TransactionExecutor {
 
       const validation = await this.validator.validateSignedTransfer(transferMessage);
       if (!validation.isValid) {
-        await this.updateTransferStatus(transferId, "failed", validation.errors.join("; "));
-        return { success: false, error: validation.errors.join("; ") };
+        const errors = validation.errors.join("; ");
+        
+        // Check for non-retryable errors
+        const nonRetryableErrors = ["Nonce already used", "Transfer deadline has expired"];
+        const isNonRetryable = nonRetryableErrors.some(error => errors.includes(error));
+        
+        if (isNonRetryable) {
+          // Mark as permanently failed - don't retry
+          await this.updateTransferStatus(transferId, "permanently_failed", errors);
+        } else {
+          await this.updateTransferStatus(transferId, "failed", errors);
+        }
+        
+        return { success: false, error: errors };
       }
 
       // Update status to pending

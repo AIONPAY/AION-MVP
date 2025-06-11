@@ -166,11 +166,16 @@ export class TransactionQueue {
     }
 
     try {
-      // Get next validated transfer to process
+      // Get next validated transfer to process (exclude permanently failed)
       const pendingTransfers = await db
         .select()
         .from(signedTransfers)
-        .where(eq(signedTransfers.status, "validated"))
+        .where(
+          and(
+            eq(signedTransfers.status, "validated"),
+            not(eq(signedTransfers.status, "permanently_failed"))
+          )
+        )
         .orderBy(signedTransfers.createdAt)
         .limit(this.maxConcurrentExecutions - this.currentExecutions);
 
