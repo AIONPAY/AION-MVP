@@ -122,7 +122,26 @@ export function TransactionHistory() {
             </tr>
           </thead>
           <tbody className="text-sm">
-            {mockTransactions.map((tx) => (
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
+                  Loading transactions...
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-8 text-center text-red-400">
+                  Failed to load transactions
+                </td>
+              </tr>
+            ) : transactions.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
+                  No transactions found
+                </td>
+              </tr>
+            ) : (
+              transactions.map((tx) => (
               <tr key={tx.id} className="border-b border-surface">
                 <td className="px-6 py-4">
                   <div className="flex items-center space-x-2">
@@ -133,16 +152,18 @@ export function TransactionHistory() {
                   </div>
                 </td>
                 <td className="px-6 py-4 font-mono text-xs">{formatAddress(tx.from)}</td>
-                <td className="px-6 py-4 font-mono text-xs">
-                  {tx.to === "Contract" ? "Contract" : (tx.to ? formatAddress(tx.to) : "-")}
+                <td className="px-6 py-4 font-mono text-xs">{formatAddress(tx.to)}</td>
+                <td className="px-6 py-4 font-semibold">
+                  {tx.amount} {tx.tokenAddress ? 'USDC' : 'ETH'}
                 </td>
-                <td className="px-6 py-4 font-semibold">{tx.amount} ETH</td>
                 <td className="px-6 py-4">{getStatusBadge(tx.status)}</td>
                 <td className="px-6 py-4 text-gray-400">{tx.timestamp}</td>
                 <td className="px-6 py-4">
                   {tx.txHash ? (
                     <a 
-                      href={`#`} 
+                      href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-primary hover:text-blue-400 font-mono text-xs flex items-center gap-1"
                     >
                       {formatAddress(tx.txHash)}
@@ -155,7 +176,8 @@ export function TransactionHistory() {
                   )}
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>
