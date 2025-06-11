@@ -142,34 +142,22 @@ export class TransferValidator {
       console.log(`=== VALIDATOR: Checking nonce usage for: ${transfer.nonce} ===`);
       console.log(`Exclude transfer ID: ${excludeTransferId || 'none'}`);
       
-      let existingTransfer;
-      if (excludeTransferId) {
-        // Re-validation: exclude current transfer
-        existingTransfer = await db
-          .select()
-          .from(signedTransfers)
-          .where(
-            and(
-              eq(signedTransfers.nonce, transfer.nonce),
-              not(eq(signedTransfers.id, excludeTransferId))
-            )
-          )
-          .limit(1);
-      } else {
-        // Initial validation: check all transfers
-        existingTransfer = await db
-          .select()
-          .from(signedTransfers)
-          .where(eq(signedTransfers.nonce, transfer.nonce))
-          .limit(1);
+      const existingTransfer = await db
+        .select()
+        .from(signedTransfers)
+        .where(eq(signedTransfers.nonce, transfer.nonce));
+      
+      // Filter out current transfer if re-validating
+      const relevantTransfers = excludeTransferId 
+        ? existingTransfer.filter(t => t.id !== excludeTransferId)
+        : existingTransfer;
+      
+      console.log(`Database nonce check: Found ${relevantTransfers.length} relevant transfers with this nonce (excluding ID ${excludeTransferId || 'none'})`);
+      if (relevantTransfers.length > 0) {
+        console.log(`Existing transfer details:`, relevantTransfers[0]);
       }
       
-      console.log(`Database nonce check: Found ${existingTransfer.length} existing transfers with this nonce (excluding ID ${excludeTransferId || 'none'})`);
-      if (existingTransfer.length > 0) {
-        console.log(`Existing transfer details:`, existingTransfer[0]);
-      }
-      
-      checks.nonceUnused = existingTransfer.length === 0;
+      checks.nonceUnused = relevantTransfers.length === 0;
       if (!checks.nonceUnused) {
         errors.push("Nonce already used");
       }
