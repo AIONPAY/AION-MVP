@@ -86,9 +86,32 @@ export function InstantTransfer() {
     try {
       // Step 1: Get token info and check balances
       setCurrentStep("Checking token information...");
-      const tokenInfo = await getTokenInfo(data.tokenAddress);
-      const balance = await getTokenBalance(data.tokenAddress, account);
-      const lockedBalance = await getLockedBalanceERC20(data.tokenAddress, account);
+      console.log("Starting token info check for:", data.tokenAddress);
+      
+      const tokenInfo = await Promise.race([
+        getTokenInfo(data.tokenAddress),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Token info timeout after 10s")), 10000)
+        )
+      ]);
+      console.log("Token info retrieved:", tokenInfo);
+      
+      const balance = await Promise.race([
+        getTokenBalance(data.tokenAddress, account),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Balance check timeout after 10s")), 10000)
+        )
+      ]);
+      console.log("Token balance retrieved:", balance.toString());
+      
+      const lockedBalance = await Promise.race([
+        getLockedBalanceERC20(data.tokenAddress, account),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Locked balance timeout after 10s")), 10000)
+        )
+      ]);
+      console.log("Locked balance retrieved:", lockedBalance.toString());
+      
       const amountWei = ethers.utils.parseUnits(data.amount, tokenInfo.decimals);
 
       console.log(`Token balance: ${ethers.utils.formatUnits(balance, tokenInfo.decimals)} ${tokenInfo.symbol}`);
