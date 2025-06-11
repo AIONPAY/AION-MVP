@@ -1,0 +1,58 @@
+Body: {
+  "from": "0x86c2a2f794325e5c8c7963876dbacba0f7a37056",
+  "to": "0x055F807117aadeD931B52047F08084D3CE056c65",
+  "amount": "111",
+  "nonce": "0xc2f176b3efe3ed18fe86ac52dcfd54f7b63e3bc3cf8c15559b43ea7faac56ee3",
+  "deadline": 1749642304,
+  "signature": "0xd79377b24dcc13201e7840461ba61e998d254566d2fce042a62d012d17b43b7f77f33b86bf81c1d0f04b8158dbd61c19d046d9e0530aa1d166e03a2daf96a5571c",
+  "contractAddress": "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9",
+  "tokenAddress": "0x96F19aB2d96Cc1B30FeB30F15E97D1B6919D63B2"
+}
+=== RELAYER: Transfer submission received ===
+Request body: {
+  "from": "0x86c2a2f794325e5c8c7963876dbacba0f7a37056",
+  "to": "0x055F807117aadeD931B52047F08084D3CE056c65",
+  "amount": "111",
+  "nonce": "0xc2f176b3efe3ed18fe86ac52dcfd54f7b63e3bc3cf8c15559b43ea7faac56ee3",
+  "deadline": 1749642304,
+  "signature": "0xd79377b24dcc13201e7840461ba61e998d254566d2fce042a62d012d17b43b7f77f33b86bf81c1d0f04b8158dbd61c19d046d9e0530aa1d166e03a2daf96a5571c",
+  "contractAddress": "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9",
+  "tokenAddress": "0x96F19aB2d96Cc1B30FeB30F15E97D1B6919D63B2"
+}
+Validated transfer: {
+  from: '0x86c2a2f794325e5c8c7963876dbacba0f7a37056',
+  to: '0x055F807117aadeD931B52047F08084D3CE056c65',
+  amount: '111',
+  nonce: '0xc2f176b3efe3ed18fe86ac52dcfd54f7b63e3bc3cf8c15559b43ea7faac56ee3',
+  deadline: 1749642304,
+  signature: '0xd79377b24dcc13201e7840461ba61e998d254566d2fce042a62d012d17b43b7f77f33b86bf81c1d0f04b8158dbd61c19d046d9e0530aa1d166e03a2daf96a5571c',
+  contractAddress: '0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9',
+  tokenAddress: '0x96F19aB2d96Cc1B30FeB30F15E97D1B6919D63B2'
+}
+=== QUEUE: Processing transfer submission ===
+Transfer details: {
+  from: '0x86c2a2f794325e5c8c7963876dbacba0f7a37056',
+  to: '0x055F807117aadeD931B52047F08084D3CE056c65',
+  amount: '111',
+  tokenAddress: '0x96F19aB2d96Cc1B30FeB30F15E97D1B6919D63B2'
+}
+Validating transfer signature and conditions...
+Validation result: {
+  isValid: false,
+  errors: [ 'Invalid signature', 'Insufficient locked funds' ],
+  checks: {
+    signatureValid: false,
+    deadlineValid: true,
+    nonceUnused: true,
+    senderHasFunds: false,
+    gracePeriodActive: true,
+    amountValid: true
+  }
+}
+Transfer validation failed: [ 'Invalid signature', 'Insufficient locked funds' ]
+Queue submission result: {
+  success: false,
+  errors: [ 'Invalid signature', 'Insufficient locked funds' ]
+}
+Queue submission failed: [ 'Invalid signature', 'Insufficient locked funds' ]
+11:40:10 AM [express] POST /api/relayer/submit 400 in 771ms :: {"success":false,"errors":["Invalid si…

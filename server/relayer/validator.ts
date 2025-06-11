@@ -40,6 +40,15 @@ const AION_ABI = [
   },
   {
     "type": "function",
+    "name": "lockedFundsERC20",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+    "inputs": [{"type": "address"}, {"type": "address"}],
+    "outputs": [{"type": "uint256"}]
+  },
+  {
+    "type": "function",
     "name": "withdrawTimestamps",
     "constant": true,
     "stateMutability": "view",
@@ -100,10 +109,21 @@ export class TransferValidator {
       // Validate signature
       try {
         const amountWei = ethers.utils.parseEther(transfer.amount);
-        const messageHash = ethers.utils.solidityKeccak256(
-          ["address", "address", "uint256", "bytes32", "uint256", "address"],
-          [transfer.from, transfer.to, amountWei, transfer.nonce, transfer.deadline, transfer.contractAddress]
-        );
+        let messageHash: string;
+        
+        if (transfer.tokenAddress) {
+          // ERC20 transfer signature - match frontend signature generation
+          messageHash = ethers.utils.solidityKeccak256(
+            ["address", "address", "address", "uint256", "bytes32", "uint256", "address"],
+            [transfer.tokenAddress, transfer.from, transfer.to, amountWei, transfer.nonce, transfer.deadline, transfer.contractAddress]
+          );
+        } else {
+          // ETH transfer signature
+          messageHash = ethers.utils.solidityKeccak256(
+            ["address", "address", "uint256", "bytes32", "uint256", "address"],
+            [transfer.from, transfer.to, amountWei, transfer.nonce, transfer.deadline, transfer.contractAddress]
+          );
+        }
         
         const recoveredAddress = ethers.utils.verifyMessage(
           ethers.utils.arrayify(messageHash),
@@ -145,8 +165,17 @@ export class TransferValidator {
 
       // Check sender balance
       try {
-        const senderBalance = await this.contract.lockedFundsETH(transfer.from);
         const requiredAmount = ethers.utils.parseEther(transfer.amount);
+        let senderBalance: ethers.BigNumber;
+        
+        if (transfer.tokenAddress) {
+          // Check ERC20 token locked balance
+          senderBalance = await this.contract.lockedFundsERC20(transfer.tokenAddress, transfer.from);
+        } else {
+          // Check ETH locked balance
+          senderBalance = await this.contract.lockedFundsETH(transfer.from);
+        }
+        
         checks.senderHasFunds = senderBalance.gte(requiredAmount);
         if (!checks.senderHasFunds) {
           errors.push("Insufficient locked funds");
