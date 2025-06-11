@@ -30,7 +30,7 @@ export const signedTransfers = pgTable("signed_transfers", {
   id: serial("id").primaryKey(),
   fromAddress: text("from_address").notNull(),
   toAddress: text("to_address").notNull(),
-  amount: decimal("amount", { precision: 18, scale: 18 }).notNull(),
+  amount: decimal("amount", { precision: 78, scale: 18 }).notNull(),
   nonce: text("nonce").notNull().unique(),
   deadline: integer("deadline").notNull(),
   signature: text("signature").notNull(),
