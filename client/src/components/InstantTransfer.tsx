@@ -151,7 +151,7 @@ export function InstantTransfer() {
 
       // Step 6: Show immediate success - signed message sent successfully!
       const submissionTime = Date.now() - startTime;
-      console.log('Signed message submitted successfully! Showing success modal with timing:', submissionTime);
+      console.log('Signed message submitted successfully! Showing success modal with timing:', submissionTime, 'ms');
       
       setSuccessData({
         txHash: `pending-${relayerResponse.transferId}`, // Temporary until real txHash
