@@ -139,11 +139,17 @@ export class TransferValidator {
       }
 
       // Check nonce usage in database
+      console.log(`=== VALIDATOR: Checking nonce usage for: ${transfer.nonce} ===`);
       const existingTransfer = await db
         .select()
         .from(signedTransfers)
         .where(eq(signedTransfers.nonce, transfer.nonce))
         .limit(1);
+      
+      console.log(`Database nonce check: Found ${existingTransfer.length} existing transfers with this nonce`);
+      if (existingTransfer.length > 0) {
+        console.log(`Existing transfer details:`, existingTransfer[0]);
+      }
       
       checks.nonceUnused = existingTransfer.length === 0;
       if (!checks.nonceUnused) {
@@ -152,14 +158,19 @@ export class TransferValidator {
 
       // Check on-chain nonce usage
       try {
+        console.log(`=== VALIDATOR: Checking on-chain nonce usage ===`);
         const nonceUsed = await this.contract.usedNonces(transfer.nonce);
+        console.log(`On-chain nonce check result: ${nonceUsed ? 'USED' : 'UNUSED'}`);
+        
         if (nonceUsed) {
           checks.nonceUnused = false;
           if (!errors.includes("Nonce already used")) {
             errors.push("Nonce already used on-chain");
           }
         }
-      } catch (error) {
+      } catch (error: any) {
+        console.log(`=== VALIDATOR: On-chain nonce check failed ===`);
+        console.log(`Error: ${error.message}`);
         errors.push("Failed to check nonce status on-chain");
       }
 

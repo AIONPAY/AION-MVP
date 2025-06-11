@@ -133,27 +133,51 @@ export class TransactionExecutor {
       const amountWei = ethers.utils.parseEther(transfer.amount);
       let tx: ethers.ContractTransaction;
       
-      if (transfer.tokenAddress) {
-        // Execute ERC20 transfer
-        tx = await this.contract.executeERC20Transfer(
-          transfer.tokenAddress,
-          transfer.fromAddress,
-          transfer.toAddress,
-          amountWei,
-          transfer.nonce,
-          transfer.deadline,
-          transfer.signature
-        );
-      } else {
-        // Execute ETH transfer
-        tx = await this.contract.executeETHTransfer(
-          transfer.fromAddress,
-          transfer.toAddress,
-          amountWei,
-          transfer.nonce,
-          transfer.deadline,
-          transfer.signature
-        );
+      console.log(`=== EXECUTOR: Starting blockchain transaction for transfer ${transferId} ===`);
+      console.log(`Transfer type: ${transfer.tokenAddress ? 'ERC20' : 'ETH'}`);
+      console.log(`From: ${transfer.fromAddress}`);
+      console.log(`To: ${transfer.toAddress}`);
+      console.log(`Amount: ${transfer.amount} (${amountWei.toString()} wei)`);
+      console.log(`Nonce: ${transfer.nonce}`);
+      console.log(`Deadline: ${transfer.deadline}`);
+      console.log(`Token: ${transfer.tokenAddress || 'ETH'}`);
+      
+      try {
+        if (transfer.tokenAddress) {
+          // Execute ERC20 transfer
+          console.log(`=== EXECUTOR: Calling executeERC20Transfer on contract ===`);
+          tx = await this.contract.executeERC20Transfer(
+            transfer.tokenAddress,
+            transfer.fromAddress,
+            transfer.toAddress,
+            amountWei,
+            transfer.nonce,
+            transfer.deadline,
+            transfer.signature
+          );
+        } else {
+          // Execute ETH transfer
+          console.log(`=== EXECUTOR: Calling executeETHTransfer on contract ===`);
+          tx = await this.contract.executeETHTransfer(
+            transfer.fromAddress,
+            transfer.toAddress,
+            amountWei,
+            transfer.nonce,
+            transfer.deadline,
+            transfer.signature
+          );
+        }
+        
+        console.log(`=== EXECUTOR: Transaction submitted successfully ===`);
+        console.log(`Transaction hash: ${tx.hash}`);
+        console.log(`Gas limit: ${tx.gasLimit?.toString()}`);
+        console.log(`Gas price: ${tx.gasPrice?.toString()}`);
+      } catch (error: any) {
+        console.log(`=== EXECUTOR: Transaction submission failed ===`);
+        console.log(`Error: ${error.message}`);
+        console.log(`Error code: ${error.code}`);
+        console.log(`Error data: ${error.data}`);
+        throw error;
       }
 
       // Update with transaction hash
@@ -171,10 +195,21 @@ export class TransactionExecutor {
       });
 
       // Wait for confirmation
+      console.log(`=== EXECUTOR: Waiting for transaction confirmation ===`);
+      console.log(`Transaction hash: ${tx.hash}`);
+      
       const receipt = await tx.wait();
+      
+      console.log(`=== EXECUTOR: Transaction receipt received ===`);
+      console.log(`Status: ${receipt.status === 1 ? 'SUCCESS' : 'FAILED'}`);
+      console.log(`Block number: ${receipt.blockNumber}`);
+      console.log(`Gas used: ${receipt.gasUsed.toString()}`);
+      console.log(`Effective gas price: ${receipt.effectiveGasPrice?.toString()}`);
 
       if (receipt.status === 1) {
         // Success
+        console.log(`=== EXECUTOR: Transaction confirmed successfully ===`);
+        
         await db
           .update(signedTransfers)
           .set({
@@ -195,6 +230,10 @@ export class TransactionExecutor {
           txHash: receipt.transactionHash,
           blockNumber: receipt.blockNumber
         });
+
+        console.log(`=== EXECUTOR: Transfer ${transferId} completed successfully ===`);
+        console.log(`Final status: CONFIRMED`);
+        console.log(`Transaction hash: ${receipt.transactionHash}`);
 
         return {
           success: true,
