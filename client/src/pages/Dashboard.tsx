@@ -13,7 +13,6 @@ import { ProtocolStats } from "@/components/ProtocolStats";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import { NotificationSystem } from "@/components/NotificationSystem";
 import { useWallet } from "@/contexts/WalletContext";
-import { useAION } from "@/hooks/useAION";
 import { isMetaMaskInstalled } from "@/lib/web3";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Atom } from "lucide-react";
@@ -102,7 +101,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 {/* ETH functionality removed - ERC20 only */}
-                {/* LockFundsERC20 removed - InstantTransfer handles lock+transfer in one step */}
+                <LockFundsERC20 />
                 <InstantTransfer />
                 <WithdrawFunds />
               </div>

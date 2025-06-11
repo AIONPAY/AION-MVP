@@ -154,7 +154,7 @@ export function TransactionHistory() {
                 <td className="px-6 py-4 font-mono text-xs">{formatAddress(tx.from)}</td>
                 <td className="px-6 py-4 font-mono text-xs">{formatAddress(tx.to)}</td>
                 <td className="px-6 py-4 font-semibold">
-                  {tx.amount} {tx.tokenAddress ? 'USDT' : 'ETH'}
+                  {tx.amount} {tx.tokenAddress ? 'USDC' : 'ETH'}
                 </td>
                 <td className="px-6 py-4">{getStatusBadge(tx.status)}</td>
                 <td className="px-6 py-4 text-gray-400">{tx.timestamp}</td>
