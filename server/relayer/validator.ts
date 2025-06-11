@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { db } from "../db";
 import { signedTransfers } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, not } from "drizzle-orm";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -76,7 +76,7 @@ export class TransferValidator {
     this.contract = new ethers.Contract(AION_CONTRACT_ADDRESS, AION_ABI, this.provider);
   }
 
-  async validateSignedTransfer(transfer: SignedTransferMessage): Promise<ValidationResult> {
+  async validateSignedTransfer(transfer: SignedTransferMessage, excludeTransferId?: number): Promise<ValidationResult> {
     const errors: string[] = [];
     const checks = {
       signatureValid: false,
@@ -140,13 +140,31 @@ export class TransferValidator {
 
       // Check nonce usage in database
       console.log(`=== VALIDATOR: Checking nonce usage for: ${transfer.nonce} ===`);
-      const existingTransfer = await db
-        .select()
-        .from(signedTransfers)
-        .where(eq(signedTransfers.nonce, transfer.nonce))
-        .limit(1);
+      console.log(`Exclude transfer ID: ${excludeTransferId || 'none'}`);
       
-      console.log(`Database nonce check: Found ${existingTransfer.length} existing transfers with this nonce`);
+      let existingTransfer;
+      if (excludeTransferId) {
+        // Re-validation: exclude current transfer
+        existingTransfer = await db
+          .select()
+          .from(signedTransfers)
+          .where(
+            and(
+              eq(signedTransfers.nonce, transfer.nonce),
+              not(eq(signedTransfers.id, excludeTransferId))
+            )
+          )
+          .limit(1);
+      } else {
+        // Initial validation: check all transfers
+        existingTransfer = await db
+          .select()
+          .from(signedTransfers)
+          .where(eq(signedTransfers.nonce, transfer.nonce))
+          .limit(1);
+      }
+      
+      console.log(`Database nonce check: Found ${existingTransfer.length} existing transfers with this nonce (excluding ID ${excludeTransferId || 'none'})`);
       if (existingTransfer.length > 0) {
         console.log(`Existing transfer details:`, existingTransfer[0]);
       }

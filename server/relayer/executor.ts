@@ -107,7 +107,7 @@ export class TransactionExecutor {
         tokenAddress: transfer.tokenAddress || undefined,
       };
 
-      const validation = await this.validator.validateSignedTransfer(transferMessage);
+      const validation = await this.validator.validateSignedTransfer(transferMessage, transferId);
       if (!validation.isValid) {
         const errors = validation.errors.join("; ");
         
