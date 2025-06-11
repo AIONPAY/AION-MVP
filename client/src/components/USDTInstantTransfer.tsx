@@ -12,11 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Zap } from "lucide-react";
 import { LoadingModal } from "./LoadingModal";
 import { SuccessModal } from "./SuccessModal";
-import { getTokenBalance, getTokenInfo, getLockedBalance } from "@/lib/aion";
+import { getTokenBalance, getTokenInfo, getLockedBalanceERC20 } from "@/lib/aion";
 import { getSigner, getFallbackProvider } from "@/lib/web3";
 
 const USDT_ADDRESS = "0x96F19aB2d96Cc1B30FeB30F15E97D1B6919D63B2";
-const AION_CONTRACT_ADDRESS = "0x055F807117aadeD931B52047F6558c8CDB3B9a70";
+const AION_CONTRACT_ADDRESS = "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9";
 
 const usdtTransferSchema = z.object({
   to: z.string()
@@ -73,7 +73,7 @@ export function USDTInstantTransfer() {
       const [tokenInfo, balance, lockedBalance] = await Promise.all([
         getTokenInfo(USDT_ADDRESS),
         getTokenBalance(USDT_ADDRESS, account),
-        getLockedBalance(account)
+        getLockedBalanceERC20(USDT_ADDRESS, account)
       ]);
 
       console.log("Token info retrieved:", tokenInfo);
@@ -93,14 +93,14 @@ export function USDTInstantTransfer() {
       console.log(`Transfer amount: ${data.amount} USDT`);
 
       const transferAmountWei = ethers.utils.parseUnits(data.amount, decimals);
-      const lockedBalanceWei = ethers.BigNumber.from(lockedBalance as string);
+      const lockedBalanceWei = lockedBalance;
 
       // Check if we have sufficient locked funds
       if (lockedBalanceWei.gte(transferAmountWei)) {
         console.log("Sufficient locked funds found, skipping lock step");
       } else {
         const requiredLockAmount = transferAmountWei.sub(lockedBalanceWei);
-        const balanceWei = ethers.BigNumber.from(balance as string);
+        const balanceWei = balance;
         
         if (balanceWei.lt(requiredLockAmount)) {
           throw new Error(`Insufficient USDT balance. Need ${ethers.utils.formatUnits(requiredLockAmount, decimals)} more USDT`);
@@ -160,7 +160,7 @@ export function USDTInstantTransfer() {
         deadline: deadline,
       };
 
-      const signature = await signer._signTypedData(domain, types, message);
+      const signature = await (signer as any)._signTypedData(domain, types, message);
 
       const signedTransfer = {
         from: account,
