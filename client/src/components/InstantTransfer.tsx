@@ -82,7 +82,6 @@ export function InstantTransfer() {
     }
 
     setIsProcessing(true);
-    setStartTime(Date.now());
 
     try {
       // Step 1: Get token info and check balances
@@ -145,12 +144,13 @@ export function InstantTransfer() {
         data.amount
       );
 
-      // Step 5: Submit to relayer
+      // Step 5: Start timing AFTER signature is complete
+      const postSignatureStart = Date.now();
       setCurrentStep("Submitting to relayer...");
       const relayerResponse = await submitToRelayer(signedMessage);
 
       // Step 6: Show immediate success - signed message sent successfully!
-      const submissionTime = Date.now() - startTime;
+      const submissionTime = Date.now() - postSignatureStart;
       console.log('Signed message submitted successfully! Showing success modal with timing:', submissionTime, 'ms');
       
       setSuccessData({
