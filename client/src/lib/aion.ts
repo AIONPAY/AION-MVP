@@ -392,6 +392,40 @@ export interface SignedTransferMessage {
   tokenAddress?: string; // Optional for ERC20 transfers
 }
 
+// Centralized high-entropy nonce generation function
+const generateSecureNonce = (from: string): string => {
+  // Use high-resolution timestamp with microsecond precision
+  const highResTimestamp = performance.now() * 1000000;
+  
+  // Generate multiple sources of cryptographic randomness (832 bits total)
+  const randomPart1 = ethers.utils.randomBytes(32); // 256 bits
+  const randomPart2 = ethers.utils.randomBytes(32); // 256 bits
+  const randomPart3 = ethers.utils.randomBytes(32); // 256 bits
+  const extraRandom = ethers.utils.randomBytes(8);  // 64 bits
+  
+  // Convert timestamp to bytes with zero padding
+  const timestampBytes = ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(Math.floor(highResTimestamp)), 
+    32
+  );
+  
+  // Convert address to bytes with zero padding
+  const addressBytes = ethers.utils.hexZeroPad(from, 32);
+  
+  // Combine all entropy sources for maximum uniqueness
+  const combinedEntropy = ethers.utils.concat([
+    randomPart1,
+    randomPart2,
+    randomPart3,
+    timestampBytes,
+    addressBytes,
+    extraRandom
+  ]);
+  
+  // Hash the combined entropy to create final nonce
+  return ethers.utils.keccak256(combinedEntropy);
+};
+
 export const getAIONContract = () => {
   const signer = getSigner();
   if (!signer) {
@@ -428,11 +462,8 @@ export const createSignedTransfer = async (
     throw new Error("No signer available");
   }
 
-  // Generate unique nonce combining timestamp, address, and random data
-  const timestamp = Date.now();
-  const randomPart = ethers.utils.randomBytes(16);
-  const addressPart = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(from + timestamp.toString()));
-  const nonce = ethers.utils.keccak256(ethers.utils.concat([randomPart, addressPart]));
+  // Generate cryptographically secure nonce with high entropy
+  const nonce = generateSecureNonce(from);
   
   // Set deadline (5 minutes from now)
   const deadline = Math.floor(Date.now() / 1000) + 300;
@@ -649,11 +680,8 @@ export const createSignedERC20Transfer = async (
     throw new Error("No signer available");
   }
 
-  // Generate unique nonce combining timestamp, address, and random data
-  const timestamp = Date.now();
-  const randomPart = ethers.utils.randomBytes(16);
-  const addressPart = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(from + timestamp.toString()));
-  const nonce = ethers.utils.keccak256(ethers.utils.concat([randomPart, addressPart]));
+  // Generate cryptographically secure nonce with high entropy
+  const nonce = generateSecureNonce(from);
   const deadline = Math.floor(Date.now() / 1000) + 300;
   
   const tokenInfo = await getTokenInfo(tokenAddress);

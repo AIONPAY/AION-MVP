@@ -130,11 +130,29 @@ export function USDTInstantTransfer() {
       const signer = getSigner();
       if (!signer) throw new Error("Could not get wallet signer");
 
-      // Generate unique nonce combining timestamp, address, and random data
-      const timestamp = Date.now();
-      const randomPart = ethers.utils.randomBytes(16);
-      const addressPart = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(account + timestamp.toString()));
-      const nonce = ethers.utils.keccak256(ethers.utils.concat([randomPart, addressPart]));
+      // Generate cryptographically secure nonce with high entropy
+      const highResTimestamp = performance.now() * 1000000;
+      const randomPart1 = ethers.utils.randomBytes(32);
+      const randomPart2 = ethers.utils.randomBytes(32);
+      const randomPart3 = ethers.utils.randomBytes(32);
+      const extraRandom = ethers.utils.randomBytes(8);
+      
+      const timestampBytes = ethers.utils.hexZeroPad(
+        ethers.utils.hexlify(Math.floor(highResTimestamp)), 
+        32
+      );
+      const addressBytes = ethers.utils.hexZeroPad(account, 32);
+      
+      const combinedEntropy = ethers.utils.concat([
+        randomPart1,
+        randomPart2,
+        randomPart3,
+        timestampBytes,
+        addressBytes,
+        extraRandom
+      ]);
+      
+      const nonce = ethers.utils.keccak256(combinedEntropy);
       const deadline = Math.floor(Date.now() / 1000) + 300; // 5 minutes from now
 
       // Create message hash according to AION specification for ERC20
