@@ -231,6 +231,13 @@ export class TransactionExecutor {
           blockNumber: receipt.blockNumber
         });
 
+        // Also send to specific transfer subscribers
+        this.wsManager.sendToTransferSubscribers(transferId, "payment_confirmed", {
+          transferId,
+          txHash: receipt.transactionHash,
+          blockNumber: receipt.blockNumber
+        });
+
         console.log(`=== EXECUTOR: Transfer ${transferId} completed successfully ===`);
         console.log(`Final status: CONFIRMED`);
         console.log(`Transaction hash: ${receipt.transactionHash}`);

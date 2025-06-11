@@ -19,6 +19,7 @@ import {
   AION_CONTRACT_ADDRESS
 } from "@/lib/aion";
 import { LoadingModal } from "@/components/LoadingModal";
+import { SuccessModal } from "@/components/SuccessModal";
 import { ethers } from "ethers";
 
 const instantTransferSchema = z.object({
@@ -34,6 +35,15 @@ export function InstantTransfer() {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successData, setSuccessData] = useState<{
+    txHash: string;
+    confirmationTime: number;
+    amount: string;
+    token: string;
+    recipient: string;
+  } | null>(null);
+  const [startTime, setStartTime] = useState(0);
 
   const form = useForm<InstantTransferForm>({
     resolver: zodResolver(instantTransferSchema),
@@ -72,6 +82,7 @@ export function InstantTransfer() {
     }
 
     setIsProcessing(true);
+    setStartTime(Date.now());
 
     try {
       // Step 1: Get token info and check balances
@@ -138,13 +149,58 @@ export function InstantTransfer() {
       setCurrentStep("Submitting to relayer...");
       const relayerResponse = await submitToRelayer(signedMessage);
 
-      toast({
-        title: "Transfer Initiated!",
-        description: `Transfer submitted to relayer. Transfer ID: ${relayerResponse.transferId}`,
-      });
+      // Step 6: Wait for confirmation via WebSocket
+      setCurrentStep("Waiting for blockchain confirmation...");
+      
+      // Listen for transaction confirmation
+      const ws = new WebSocket(`wss://${window.location.host}`);
+      
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          type: 'subscribe',
+          topic: `transfer_${relayerResponse.transferId}`
+        }));
+      };
 
-      // Reset form
-      form.reset();
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        console.log('WebSocket message received:', message);
+        
+        if (message.type === 'payment_confirmed' && message.data.txHash) {
+          const confirmationTime = Date.now() - startTime;
+          
+          setSuccessData({
+            txHash: message.data.txHash,
+            confirmationTime,
+            amount: data.amount,
+            token: tokenInfo.symbol,
+            recipient: data.recipientAddress
+          });
+          
+          setIsProcessing(false);
+          setCurrentStep("");
+          setShowSuccess(true);
+          form.reset();
+          
+          ws.close();
+        }
+      };
+
+      // Fallback: Close WebSocket after 30 seconds
+      setTimeout(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+          setIsProcessing(false);
+          setCurrentStep("");
+          
+          toast({
+            title: "Transfer Initiated!",
+            description: `Transfer submitted to relayer. Transfer ID: ${relayerResponse.transferId}`,
+          });
+          
+          form.reset();
+        }
+      }, 30000);
 
     } catch (error: any) {
       console.error("Instant transfer error:", error);
@@ -247,6 +303,18 @@ export function InstantTransfer() {
         title="Processing Instant Transfer"
         description={currentStep}
       />
+
+      {successData && (
+        <SuccessModal
+          isOpen={showSuccess}
+          onClose={() => setShowSuccess(false)}
+          txHash={successData.txHash}
+          confirmationTime={successData.confirmationTime}
+          amount={successData.amount}
+          token={successData.token}
+          recipient={successData.recipient}
+        />
+      )}
     </>
   );
 }
