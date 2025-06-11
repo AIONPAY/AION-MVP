@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send, PenTool } from "lucide-react";
 import { createSignedTransfer, createSignedERC20Transfer } from "@/lib/aion";
-import { useWallet } from "@/hooks/useWallet";
+import { useWallet } from "@/contexts/WalletContext";
 import { useAION } from "@/hooks/useAION";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingModal } from "./LoadingModal";
