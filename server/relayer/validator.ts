@@ -24,6 +24,7 @@ export interface SignedTransferMessage {
   deadline: number;
   signature: string;
   contractAddress: string;
+  tokenAddress?: string;
 }
 
 const AION_CONTRACT_ADDRESS = "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9";

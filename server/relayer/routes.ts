@@ -17,7 +17,8 @@ const signedTransferSchema = z.object({
   nonce: z.string().regex(/^0x[a-fA-F0-9]+$/, "Invalid nonce format"),
   deadline: z.number().int().positive(),
   signature: z.string().regex(/^0x[a-fA-F0-9]+$/, "Invalid signature format"),
-  contractAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid contract address")
+  contractAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid contract address"),
+  tokenAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid token address format").optional()
 });
 
 export function createRelayerRoutes(queue: TransactionQueue): Router {

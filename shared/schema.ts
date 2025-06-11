@@ -35,6 +35,7 @@ export const signedTransfers = pgTable("signed_transfers", {
   deadline: integer("deadline").notNull(),
   signature: text("signature").notNull(),
   contractAddress: text("contract_address").notNull(),
+  tokenAddress: text("token_address"), // Optional field for ERC20 transfers
   status: text("status").notNull().default("received"), // 'received', 'validated', 'pending', 'confirmed', 'failed'
   txHash: text("tx_hash"),
   blockNumber: integer("block_number"),
