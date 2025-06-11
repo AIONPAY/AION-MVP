@@ -14,7 +14,8 @@ import {
   createSignedERC20Transfer,
   getTokenInfo,
   getTokenBalance,
-  getTokenAllowance
+  getTokenAllowance,
+  AION_CONTRACT_ADDRESS
 } from "@/lib/aion";
 import { LoadingModal } from "@/components/LoadingModal";
 import { ethers } from "ethers";
@@ -84,7 +85,7 @@ export function InstantTransfer() {
 
       // Step 2: Check and approve if needed
       setCurrentStep("Checking token allowance...");
-      const allowance = await getTokenAllowance(data.tokenAddress, account, process.env.AION_CONTRACT_ADDRESS || "");
+      const allowance = await getTokenAllowance(data.tokenAddress, account, AION_CONTRACT_ADDRESS);
       
       if (allowance.lt(amountWei)) {
         setCurrentStep("Approving token spending...");
