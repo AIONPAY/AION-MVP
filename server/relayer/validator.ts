@@ -106,36 +106,82 @@ export class TransferValidator {
         errors.push("Transfer deadline has expired");
       }
 
-      // Validate signature
+      // Validate EIP-712 signature
       try {
         const amountWei = ethers.utils.parseEther(transfer.amount);
-        let messageHash: string;
+        
+        // Get chain ID - default to Sepolia if not available
+        const network = await this.provider.getNetwork();
+        const chainId = network.chainId;
+        
+        // EIP-712 Domain
+        const domain = {
+          name: "AION",
+          version: "1",
+          chainId: chainId,
+          verifyingContract: transfer.contractAddress
+        };
+        
+        let types: any;
+        let message: any;
         
         if (transfer.tokenAddress) {
-          // ERC20 transfer signature - match frontend signature generation
-          messageHash = ethers.utils.solidityKeccak256(
-            ["address", "address", "address", "uint256", "bytes32", "uint256", "address"],
-            [transfer.tokenAddress, transfer.from, transfer.to, amountWei, transfer.nonce, transfer.deadline, transfer.contractAddress]
-          );
+          // ERC20 transfer types
+          types = {
+            ERC20Transfer: [
+              { name: "token", type: "address" },
+              { name: "from", type: "address" },
+              { name: "to", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "nonce", type: "bytes32" },
+              { name: "deadline", type: "uint256" }
+            ]
+          };
+          
+          message = {
+            token: transfer.tokenAddress,
+            from: transfer.from,
+            to: transfer.to,
+            amount: amountWei,
+            nonce: transfer.nonce,
+            deadline: transfer.deadline
+          };
         } else {
-          // ETH transfer signature
-          messageHash = ethers.utils.solidityKeccak256(
-            ["address", "address", "uint256", "bytes32", "uint256", "address"],
-            [transfer.from, transfer.to, amountWei, transfer.nonce, transfer.deadline, transfer.contractAddress]
-          );
+          // ETH transfer types
+          types = {
+            ETHTransfer: [
+              { name: "from", type: "address" },
+              { name: "to", type: "address" },
+              { name: "amount", type: "uint256" },
+              { name: "nonce", type: "bytes32" },
+              { name: "deadline", type: "uint256" }
+            ]
+          };
+          
+          message = {
+            from: transfer.from,
+            to: transfer.to,
+            amount: amountWei,
+            nonce: transfer.nonce,
+            deadline: transfer.deadline
+          };
         }
         
-        const recoveredAddress = ethers.utils.verifyMessage(
-          ethers.utils.arrayify(messageHash),
+        // Recover address from EIP-712 signature
+        const recoveredAddress = ethers.utils.verifyTypedData(
+          domain,
+          types,
+          message,
           transfer.signature
         );
         
         checks.signatureValid = recoveredAddress.toLowerCase() === transfer.from.toLowerCase();
         if (!checks.signatureValid) {
-          errors.push("Invalid signature");
+          errors.push("Invalid EIP-712 signature");
         }
       } catch (error: any) {
-        errors.push("Signature verification failed");
+        console.error("EIP-712 signature verification error:", error);
+        errors.push("EIP-712 signature verification failed");
       }
 
       // Check nonce usage in database
