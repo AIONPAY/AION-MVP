@@ -3,55 +3,55 @@
 @tailwind utilities;
 
 :root {
-  /* Default to dark theme colors */
-  --background: hsl(223, 84%, 5%);
+  /* Default to dark theme colors matching the mobile design */
+  --background: hsl(0, 0%, 8%);
   --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(221, 39%, 11%);
-  --muted-foreground: hsl(215, 20%, 65%);
-  --popover: hsl(223, 84%, 5%);
+  --muted: hsl(0, 0%, 12%);
+  --muted-foreground: hsl(0, 0%, 70%);
+  --popover: hsl(0, 0%, 8%);
   --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(221, 39%, 11%);
+  --card: hsl(0, 0%, 12%);
   --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(214, 32%, 20%);
-  --input: hsl(214, 32%, 20%);
-  --primary: hsl(0, 0%, 4.7%);
+  --border: hsl(0, 0%, 20%);
+  --input: hsl(0, 0%, 15%);
+  --primary: hsl(12, 100%, 60%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(6, 100%, 60%);
+  --secondary: hsl(12, 100%, 60%);
   --secondary-foreground: hsl(0, 0%, 100%);
-  --accent: hsl(221, 39%, 11%);
-  --accent-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(12, 100%, 60%);
+  --accent-foreground: hsl(0, 0%, 100%);
   --destructive: hsl(0, 62.8%, 30.6%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(215, 20%, 65%);
+  --ring: hsl(12, 100%, 60%);
   --radius: 0.5rem;
   
   /* AION Protocol specific colors */
-  --dark: hsl(0, 0%, 4.7%);
-  --dark-light: hsl(0, 0%, 8%);
-  --surface: hsl(6, 100%, 20%);
-  --surface-light: hsl(6, 100%, 30%);
+  --dark: hsl(0, 0%, 8%);
+  --dark-light: hsl(0, 0%, 12%);
+  --surface: hsl(0, 0%, 15%);
+  --surface-light: hsl(0, 0%, 20%);
 }
 
 .dark {
-  --background: hsl(223, 84%, 5%);
+  --background: hsl(0, 0%, 8%);
   --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(221, 39%, 11%);
-  --muted-foreground: hsl(215, 20%, 65%);
-  --popover: hsl(223, 84%, 5%);
+  --muted: hsl(0, 0%, 12%);
+  --muted-foreground: hsl(0, 0%, 70%);
+  --popover: hsl(0, 0%, 8%);
   --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(221, 39%, 11%);
+  --card: hsl(0, 0%, 12%);
   --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(214, 32%, 20%);
-  --input: hsl(214, 32%, 20%);
-  --primary: hsl(0, 0%, 4.7%);
+  --border: hsl(0, 0%, 20%);
+  --input: hsl(0, 0%, 15%);
+  --primary: hsl(12, 100%, 60%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(6, 100%, 60%);
+  --secondary: hsl(12, 100%, 60%);
   --secondary-foreground: hsl(0, 0%, 100%);
-  --accent: hsl(221, 39%, 11%);
-  --accent-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(12, 100%, 60%);
+  --accent-foreground: hsl(0, 0%, 100%);
   --destructive: hsl(0, 62.8%, 30.6%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(215, 20%, 65%);
+  --ring: hsl(12, 100%, 60%);
 }
 
 @layer base {
@@ -60,7 +60,7 @@
   }
 
   body {
-    @apply font-sans antialiased bg-dark text-white;
+    @apply font-sans antialiased bg-background text-foreground;
   }
 
   /* Set dark theme as default */
