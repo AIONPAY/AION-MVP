@@ -66,7 +66,19 @@ export function createRelayerRoutes(queue: TransactionQueue): Router {
       const validation = signedTransferSchema.safeParse(req.body);
       
       if (!validation.success) {
-        console.log("Validation failed:", validation.error.errors);
+        console.log("=== VALIDATION FAILED ===");
+        console.log("Validation errors:", JSON.stringify(validation.error.errors, null, 2));
+        console.log("Input data:", JSON.stringify(req.body, null, 2));
+        console.log("Expected schema:", {
+          from: 'string (address)',
+          to: 'string (address)', 
+          amount: 'string (number)',
+          nonce: 'string (hex)',
+          deadline: 'number|string',
+          signature: 'string (hex)',
+          contractAddress: 'string (address)',
+          tokenAddress: 'string (address) - optional'
+        });
         return res.status(400).json({
           error: "Invalid transfer data",
           details: validation.error.errors
