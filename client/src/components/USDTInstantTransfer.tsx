@@ -12,11 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Zap } from "lucide-react";
 import { LoadingModal } from "./LoadingModal";
 import { SuccessModal } from "./SuccessModal";
-import { getTokenBalance, getTokenInfo, getLockedBalanceERC20 } from "@/lib/aion";
+import { getTokenBalance, getTokenInfo, getLockedBalanceERC20, createSignedERC20Transfer } from "@/lib/aion";
 import { getSigner, getFallbackProvider } from "@/lib/web3";
 
 const USDT_ADDRESS = "0x96F19aB2d96Cc1B30FeB30F15E97D1B6919D63B2";
-const AION_CONTRACT_ADDRESS = "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9";
+const AION_CONTRACT_ADDRESS = "0x2efDbDd746b383068D6A71b91fA1431EFD6917b3";
 
 const usdtTransferSchema = z.object({
   to: z.string()
@@ -130,50 +130,15 @@ export function USDTInstantTransfer() {
       const signer = getSigner();
       if (!signer) throw new Error("Could not get wallet signer");
 
-      // Generate cryptographically secure nonce with high entropy
-      const highResTimestamp = performance.now() * 1000000;
-      const randomPart1 = ethers.utils.randomBytes(32);
-      const randomPart2 = ethers.utils.randomBytes(32);
-      const randomPart3 = ethers.utils.randomBytes(32);
-      const extraRandom = ethers.utils.randomBytes(8);
-      
-      const timestampBytes = ethers.utils.hexZeroPad(
-        ethers.utils.hexlify(Math.floor(highResTimestamp)), 
-        32
-      );
-      const addressBytes = ethers.utils.hexZeroPad(account, 32);
-      
-      const combinedEntropy = ethers.utils.concat([
-        randomPart1,
-        randomPart2,
-        randomPart3,
-        timestampBytes,
-        addressBytes,
-        extraRandom
-      ]);
-      
-      const nonce = ethers.utils.keccak256(combinedEntropy);
-      const deadline = Math.floor(Date.now() / 1000) + 300; // 5 minutes from now
-
-      // Create message hash according to AION specification for ERC20
-      const messageHash = ethers.utils.solidityKeccak256(
-        ["address", "address", "address", "uint256", "bytes32", "uint256", "address"],
-        [USDT_ADDRESS, account, data.to, transferAmountWei, nonce, deadline, AION_CONTRACT_ADDRESS]
+      // Use the same EIP-712 signature generation as the main library
+      const signedTransfer = await createSignedERC20Transfer(
+        USDT_ADDRESS,
+        account,
+        data.to,
+        data.amount
       );
 
-      // Sign the message
-      const signature = await signer.signMessage(ethers.utils.arrayify(messageHash));
-
-      const signedTransfer = {
-        from: account,
-        to: data.to,
-        amount: data.amount,
-        nonce: ethers.utils.hexlify(nonce),
-        deadline: deadline,
-        signature: signature,
-        contractAddress: AION_CONTRACT_ADDRESS,
-        tokenAddress: USDT_ADDRESS,
-      };
+      // signedTransfer is already created above
 
       // Show immediate success right after signature
       const postSignatureStart = Date.now();

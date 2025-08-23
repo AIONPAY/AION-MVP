@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { getSigner, getProvider } from "./web3";
 
 // Contract configuration - Sepolia deployment
-export const AION_CONTRACT_ADDRESS = "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9";
+export const AION_CONTRACT_ADDRESS = "0x2efDbDd746b383068D6A71b91fA1431EFD6917b3";
 
 // ERC20 Token ABI for interacting with tokens
 export const ERC20_ABI = [
@@ -75,12 +75,27 @@ export const AION_ABI = [
   {
     "type": "error",
     "name": "ECDSAInvalidSignatureLength",
-    "inputs": [{"type": "uint256", "name": "length"}]
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "length"
+      }
+    ]
   },
   {
     "type": "error",
     "name": "ECDSAInvalidSignatureS",
-    "inputs": [{"type": "bytes32", "name": "s"}]
+    "inputs": [
+      {
+        "type": "bytes32",
+        "name": "s"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InvalidShortString",
+    "inputs": []
   },
   {
     "type": "error",
@@ -88,13 +103,68 @@ export const AION_ABI = [
     "inputs": []
   },
   {
+    "type": "error",
+    "name": "StringTooLong",
+    "inputs": [
+      {
+        "type": "string",
+        "name": "str"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "EIP712DomainChanged",
+    "inputs": []
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "FundsLockedERC20",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "user",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "token",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "amount",
+        "indexed": false
+      },
+      {
+        "type": "uint256",
+        "name": "timestamp",
+        "indexed": false
+      }
+    ]
+  },
+  {
     "type": "event",
     "anonymous": false,
     "name": "FundsLockedETH",
     "inputs": [
-      {"type": "address", "name": "user", "indexed": true},
-      {"type": "uint256", "name": "amount", "indexed": false},
-      {"type": "uint256", "name": "timestamp", "indexed": false}
+      {
+        "type": "address",
+        "name": "user",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "amount",
+        "indexed": false
+      },
+      {
+        "type": "uint256",
+        "name": "timestamp",
+        "indexed": false
+      }
     ]
   },
   {
@@ -102,18 +172,48 @@ export const AION_ABI = [
     "anonymous": false,
     "name": "FundsTransferred",
     "inputs": [
-      {"type": "address", "name": "from", "indexed": true},
-      {"type": "address", "name": "to", "indexed": true},
-      {"type": "uint256", "name": "amount", "indexed": false}
+      {
+        "type": "address",
+        "name": "from",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "to",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "amount",
+        "indexed": false
+      }
     ]
   },
   {
     "type": "event",
     "anonymous": false,
-    "name": "WithdrawalInitiated",
+    "name": "FundsTransferredERC20",
     "inputs": [
-      {"type": "address", "name": "user", "indexed": true},
-      {"type": "uint256", "name": "timestamp", "indexed": false}
+      {
+        "type": "address",
+        "name": "from",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "to",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "token",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "amount",
+        "indexed": false
+      }
     ]
   },
   {
@@ -121,8 +221,38 @@ export const AION_ABI = [
     "anonymous": false,
     "name": "FundsWithdrawn",
     "inputs": [
-      {"type": "address", "name": "user", "indexed": true},
-      {"type": "uint256", "name": "amount", "indexed": false}
+      {
+        "type": "address",
+        "name": "user",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "amount",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "FundsWithdrawnERC20",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "user",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "token",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "amount",
+        "indexed": false
+      }
     ]
   },
   {
@@ -130,8 +260,77 @@ export const AION_ABI = [
     "anonymous": false,
     "name": "WithdrawalCancelled",
     "inputs": [
-      {"type": "address", "name": "user", "indexed": true},
-      {"type": "uint256", "name": "timestamp", "indexed": false}
+      {
+        "type": "address",
+        "name": "user",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "timestamp",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "WithdrawalCancelledERC20",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "user",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "token",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "timestamp",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "WithdrawalInitiated",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "user",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "timestamp",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "anonymous": false,
+    "name": "WithdrawalInitiatedERC20",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "user",
+        "indexed": true
+      },
+      {
+        "type": "address",
+        "name": "token",
+        "indexed": true
+      },
+      {
+        "type": "uint256",
+        "name": "timestamp",
+        "indexed": false
+      }
     ]
   },
   {
@@ -140,115 +339,145 @@ export const AION_ABI = [
     "constant": true,
     "stateMutability": "view",
     "payable": false,
+
     "inputs": [],
-    "outputs": [{"type": "uint256"}]
-  },
-  {
-    "type": "function",
-    "name": "lockFundsETH",
-    "constant": false,
-    "stateMutability": "payable",
-    "payable": true,
-    "inputs": [],
-    "outputs": []
-  },
-  {
-    "type": "function",
-    "name": "executeETHTransfer",
-    "constant": false,
-    "payable": false,
-    "inputs": [
-      {"type": "address", "name": "from"},
-      {"type": "address", "name": "to"},
-      {"type": "uint256", "name": "amount"},
-      {"type": "bytes32", "name": "nonce"},
-      {"type": "uint256", "name": "deadline"},
-      {"type": "bytes", "name": "signature"}
-    ],
-    "outputs": []
-  },
-  {
-    "type": "function",
-    "name": "initiateWithdrawal",
-    "constant": false,
-    "payable": false,
-    "inputs": [],
-    "outputs": []
-  },
-  {
-    "type": "function",
-    "name": "withdrawFundsETH",
-    "constant": false,
-    "payable": false,
-    "inputs": [],
-    "outputs": []
+    "outputs": [
+      {
+        "type": "uint256"
+      }
+    ]
   },
   {
     "type": "function",
     "name": "cancelWithdrawal",
     "constant": false,
     "payable": false,
+
     "inputs": [],
     "outputs": []
   },
   {
     "type": "function",
-    "name": "lockedFundsETH",
-    "constant": true,
-    "stateMutability": "view",
-    "payable": false,
-    "inputs": [{"type": "address"}],
-    "outputs": [{"type": "uint256"}]
-  },
-  {
-    "type": "function",
-    "name": "withdrawTimestamps",
-    "constant": true,
-    "stateMutability": "view",
-    "payable": false,
-    "inputs": [{"type": "address"}],
-    "outputs": [{"type": "uint256"}]
-  },
-  {
-    "type": "function",
-    "name": "usedNonces",
-    "constant": true,
-    "stateMutability": "view",
-    "payable": false,
-    "inputs": [{"type": "bytes32"}],
-    "outputs": [{"type": "bool"}]
-  },
-  // ERC20 Functions
-  {
-    "type": "function",
-    "name": "lockFundsERC20",
+    "name": "cancelWithdrawalERC20",
     "constant": false,
     "payable": false,
+
     "inputs": [
-      {"type": "address", "name": "token"},
-      {"type": "uint256", "name": "amount"}
+      {
+        "type": "address",
+        "name": "token"
+      }
     ],
     "outputs": []
   },
   {
     "type": "function",
-    "name": "lockAndWrapERC20",
+    "name": "eip712Domain",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "bytes1",
+        "name": "fields"
+      },
+      {
+        "type": "string",
+        "name": "name"
+      },
+      {
+        "type": "string",
+        "name": "version"
+      },
+      {
+        "type": "uint256",
+        "name": "chainId"
+      },
+      {
+        "type": "address",
+        "name": "verifyingContract"
+      },
+      {
+        "type": "bytes32",
+        "name": "salt"
+      },
+      {
+        "type": "uint256[]",
+        "name": "extensions"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "executeBulkERC20Transfers",
     "constant": false,
     "payable": false,
+
     "inputs": [
-      {"type": "address", "name": "token"},
-      {"type": "uint256", "name": "amount"}
+      {
+        "type": "address[]",
+        "name": "tokens"
+      },
+      {
+        "type": "address[]",
+        "name": "from"
+      },
+      {
+        "type": "address[]",
+        "name": "to"
+      },
+      {
+        "type": "uint256[]",
+        "name": "amounts"
+      },
+      {
+        "type": "bytes32[]",
+        "name": "nonces"
+      },
+      {
+        "type": "uint256[]",
+        "name": "deadlines"
+      },
+      {
+        "type": "bytes[]",
+        "name": "signatures"
+      }
     ],
     "outputs": []
   },
   {
     "type": "function",
-    "name": "unwrapAndUnlockERC20",
+    "name": "executeBulkETHTransfers",
     "constant": false,
     "payable": false,
+
     "inputs": [
-      {"type": "address", "name": "token"},
-      {"type": "uint256", "name": "amount"}
+      {
+        "type": "address[]",
+        "name": "from"
+      },
+      {
+        "type": "address[]",
+        "name": "to"
+      },
+      {
+        "type": "uint256[]",
+        "name": "amounts"
+      },
+      {
+        "type": "bytes32[]",
+        "name": "nonces"
+      },
+      {
+        "type": "uint256[]",
+        "name": "deadlines"
+      },
+      {
+        "type": "bytes[]",
+        "name": "signatures"
+      }
     ],
     "outputs": []
   },
@@ -257,31 +486,122 @@ export const AION_ABI = [
     "name": "executeERC20Transfer",
     "constant": false,
     "payable": false,
+
     "inputs": [
-      {"type": "address", "name": "token"},
-      {"type": "address", "name": "from"},
-      {"type": "address", "name": "to"},
-      {"type": "uint256", "name": "amount"},
-      {"type": "bytes32", "name": "nonce"},
-      {"type": "uint256", "name": "deadline"},
-      {"type": "bytes", "name": "signature"}
+      {
+        "type": "address",
+        "name": "token"
+      },
+      {
+        "type": "address",
+        "name": "from"
+      },
+      {
+        "type": "address",
+        "name": "to"
+      },
+      {
+        "type": "uint256",
+        "name": "amount"
+      },
+      {
+        "type": "bytes32",
+        "name": "nonce"
+      },
+      {
+        "type": "uint256",
+        "name": "deadline"
+      },
+      {
+        "type": "bytes",
+        "name": "signature"
+      }
     ],
     "outputs": []
   },
   {
     "type": "function",
-    "name": "withdrawFundsERC20",
+    "name": "executeETHTransfer",
     "constant": false,
     "payable": false,
-    "inputs": [{"type": "address", "name": "token"}],
+
+    "inputs": [
+      {
+        "type": "address",
+        "name": "from"
+      },
+      {
+        "type": "address",
+        "name": "to"
+      },
+      {
+        "type": "uint256",
+        "name": "amount"
+      },
+      {
+        "type": "bytes32",
+        "name": "nonce"
+      },
+      {
+        "type": "uint256",
+        "name": "deadline"
+      },
+      {
+        "type": "bytes",
+        "name": "signature"
+      }
+    ],
     "outputs": []
   },
   {
     "type": "function",
-    "name": "cancelWithdrawalERC20",
+    "name": "initiateWithdrawal",
     "constant": false,
     "payable": false,
-    "inputs": [{"type": "address", "name": "token"}],
+
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "initiateWithdrawalERC20",
+    "constant": false,
+    "payable": false,
+
+    "inputs": [
+      {
+        "type": "address",
+        "name": "token"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "lockFundsERC20",
+    "constant": false,
+    "payable": false,
+
+    "inputs": [
+      {
+        "type": "address",
+        "name": "token"
+      },
+      {
+        "type": "uint256",
+        "name": "amount"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "lockFundsETH",
+    "constant": false,
+    "stateMutability": "payable",
+    "payable": true,
+
+    "inputs": [],
     "outputs": []
   },
   {
@@ -290,11 +610,111 @@ export const AION_ABI = [
     "constant": true,
     "stateMutability": "view",
     "payable": false,
+
     "inputs": [
-      {"type": "address", "name": "token"},
-      {"type": "address", "name": "user"}
+      {
+        "type": "address"
+      },
+      {
+        "type": "address"
+      }
     ],
-    "outputs": [{"type": "uint256"}]
+    "outputs": [
+      {
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "lockedFundsETH",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+
+    "inputs": [
+      {
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "usedNonces",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+
+    "inputs": [
+      {
+        "type": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bool"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "withdrawFundsERC20",
+    "constant": false,
+    "payable": false,
+
+    "inputs": [
+      {
+        "type": "address",
+        "name": "token"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "withdrawFundsETH",
+    "constant": false,
+    "payable": false,
+
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "withdrawTimestamps",
+    "constant": true,
+    "stateMutability": "view",
+    "payable": false,
+
+    "inputs": [
+      {
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "uint256"
+      }
+    ]
   },
   {
     "type": "function",
@@ -302,81 +722,19 @@ export const AION_ABI = [
     "constant": true,
     "stateMutability": "view",
     "payable": false,
+
     "inputs": [
-      {"type": "address", "name": "user"},
-      {"type": "address", "name": "token"}
+      {
+        "type": "address"
+      },
+      {
+        "type": "address"
+      }
     ],
-    "outputs": [{"type": "uint256"}]
-  },
-  {
-    "type": "function",
-    "name": "wrappedTokenFor",
-    "constant": true,
-    "stateMutability": "view",
-    "payable": false,
-    "inputs": [{"type": "address", "name": "token"}],
-    "outputs": [{"type": "address"}]
-  },
-  // Events for ERC20
-  {
-    "type": "event",
-    "anonymous": false,
-    "name": "FundsLockedERC20",
-    "inputs": [
-      {"type": "address", "name": "user", "indexed": true},
-      {"type": "address", "name": "token", "indexed": true},
-      {"type": "uint256", "name": "amount", "indexed": false},
-      {"type": "uint256", "name": "timestamp", "indexed": false}
-    ]
-  },
-  {
-    "type": "event",
-    "anonymous": false,
-    "name": "WithdrawalInitiatedERC20",
-    "inputs": [
-      {"type": "address", "name": "user", "indexed": true},
-      {"type": "address", "name": "token", "indexed": true},
-      {"type": "uint256", "name": "timestamp", "indexed": false}
-    ]
-  },
-  {
-    "type": "event",
-    "anonymous": false,
-    "name": "WithdrawalCancelledERC20",
-    "inputs": [
-      {"type": "address", "name": "user", "indexed": true},
-      {"type": "address", "name": "token", "indexed": true},
-      {"type": "uint256", "name": "timestamp", "indexed": false}
-    ]
-  },
-  {
-    "type": "event",
-    "anonymous": false,
-    "name": "FundsTransferredERC20",
-    "inputs": [
-      {"type": "address", "name": "from", "indexed": true},
-      {"type": "address", "name": "to", "indexed": true},
-      {"type": "address", "name": "token", "indexed": true},
-      {"type": "uint256", "name": "amount", "indexed": false}
-    ]
-  },
-  {
-    "type": "event",
-    "anonymous": false,
-    "name": "FundsWithdrawnERC20",
-    "inputs": [
-      {"type": "address", "name": "user", "indexed": true},
-      {"type": "address", "name": "token", "indexed": true},
-      {"type": "uint256", "name": "amount", "indexed": false}
-    ]
-  },
-  {
-    "type": "event",
-    "anonymous": false,
-    "name": "WrappedTokenCreated",
-    "inputs": [
-      {"type": "address", "name": "underlyingToken", "indexed": true},
-      {"type": "address", "name": "wrappedToken", "indexed": true}
+    "outputs": [
+      {
+        "type": "uint256"
+      }
     ]
   }
 ];
@@ -471,14 +829,40 @@ export const createSignedTransfer = async (
   // Convert amount to wei
   const amountWei = ethers.utils.parseEther(amount);
   
-  // Create message hash according to AION specification
-  const messageHash = ethers.utils.solidityKeccak256(
-    ["address", "address", "uint256", "bytes32", "uint256", "address"],
-    [from, to, amountWei, nonce, deadline, AION_CONTRACT_ADDRESS]
-  );
+  // Get chain ID for domain
+  const network = await signer.provider?.getNetwork();
+  const chainId = network?.chainId || 1;
   
-  // Sign the message
-  const signature = await signer.signMessage(ethers.utils.arrayify(messageHash));
+  // EIP-712 Domain
+  const domain = {
+    name: "AION",
+    version: "1",
+    chainId: chainId,
+    verifyingContract: AION_CONTRACT_ADDRESS
+  };
+  
+  // EIP-712 Types
+  const types = {
+    ETHTransfer: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+      { name: "deadline", type: "uint256" }
+    ]
+  };
+  
+  // Message data
+  const message = {
+    from: from,
+    to: to,
+    amount: amountWei,
+    nonce: nonce,
+    deadline: deadline
+  };
+  
+  // Sign using EIP-712
+  const signature = await (signer as any)._signTypedData(domain, types, message);
   
   return {
     from,
@@ -687,12 +1071,42 @@ export const createSignedERC20Transfer = async (
   const tokenInfo = await getTokenInfo(tokenAddress);
   const amountWei = ethers.utils.parseUnits(amount, tokenInfo.decimals);
   
-  const messageHash = ethers.utils.solidityKeccak256(
-    ["address", "address", "address", "uint256", "bytes32", "uint256", "address"],
-    [tokenAddress, from, to, amountWei, nonce, deadline, AION_CONTRACT_ADDRESS]
-  );
+  // Get chain ID for domain
+  const network = await signer.provider?.getNetwork();
+  const chainId = network?.chainId || 1;
   
-  const signature = await signer.signMessage(ethers.utils.arrayify(messageHash));
+  // EIP-712 Domain
+  const domain = {
+    name: "AION",
+    version: "1",
+    chainId: chainId,
+    verifyingContract: AION_CONTRACT_ADDRESS
+  };
+  
+  // EIP-712 Types
+  const types = {
+    ERC20Transfer: [
+      { name: "token", type: "address" },
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+      { name: "deadline", type: "uint256" }
+    ]
+  };
+  
+  // Message data
+  const message = {
+    token: tokenAddress,
+    from: from,
+    to: to,
+    amount: amountWei,
+    nonce: nonce,
+    deadline: deadline
+  };
+  
+  // Sign using EIP-712
+  const signature = await (signer as any)._signTypedData(domain, types, message);
   
   return {
     from,
