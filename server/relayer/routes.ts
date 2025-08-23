@@ -15,7 +15,7 @@ const signedTransferSchema = z.object({
     }
   }, "Invalid amount"),
   nonce: z.string().regex(/^0x[a-fA-F0-9]+$/, "Invalid nonce format"),
-  deadline: z.number().int().positive(),
+  deadline: z.union([z.number(), z.string().transform(val => parseInt(val))]).refine(val => val > 0, "Invalid deadline"),
   signature: z.string().regex(/^0x[a-fA-F0-9]+$/, "Invalid signature format"),
   contractAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid contract address"),
   tokenAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid token address format").optional()
