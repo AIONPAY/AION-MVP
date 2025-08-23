@@ -16,7 +16,8 @@ import {
   approveToken, 
   lockFundsERC20, 
   lockAndWrapERC20,
-  getLockedBalanceERC20 
+  getLockedBalanceERC20,
+  AION_CONTRACT_ADDRESS
 } from "@/lib/aion";
 import { ethers } from "ethers";
 
@@ -58,7 +59,7 @@ export function LockFundsERC20() {
         getTokenInfo(tokenAddress),
         getTokenBalance(tokenAddress, account),
         getLockedBalanceERC20(tokenAddress, account),
-        getTokenAllowance(tokenAddress, account, "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9")
+        getTokenAllowance(tokenAddress, account, AION_CONTRACT_ADDRESS)
       ]);
       
       setTokenInfo(info);
