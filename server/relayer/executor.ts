@@ -9,7 +9,7 @@ interface WebSocketManager {
   sendToTransferSubscribers(transferId: number, type: string, data: any): void;
 }
 
-const AION_CONTRACT_ADDRESS = "0x146CB95D41aAD4674Ca3fA80DAA4EcBc848B4bC9";
+const AION_CONTRACT_ADDRESS = "0x2efDbDd746b383068D6A71b91fA1431EFD6917b3";
 const AION_ABI = [
   {
     "type": "function",
