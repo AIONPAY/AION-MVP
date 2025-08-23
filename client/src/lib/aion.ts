@@ -829,9 +829,9 @@ export const createSignedTransfer = async (
   // Convert amount to wei
   const amountWei = ethers.utils.parseEther(amount);
   
-  // Get chain ID for domain
+  // Get chain ID for domain (default to Sepolia)
   const network = await signer.provider?.getNetwork();
-  const chainId = network?.chainId || 1;
+  const chainId = network?.chainId || 11155111;
   
   // EIP-712 Domain
   const domain = {
@@ -1071,9 +1071,9 @@ export const createSignedERC20Transfer = async (
   const tokenInfo = await getTokenInfo(tokenAddress);
   const amountWei = ethers.utils.parseUnits(amount, tokenInfo.decimals);
   
-  // Get chain ID for domain
+  // Get chain ID for domain (default to Sepolia)
   const network = await signer.provider?.getNetwork();
-  const chainId = network?.chainId || 1;
+  const chainId = network?.chainId || 11155111;
   
   // EIP-712 Domain
   const domain = {
