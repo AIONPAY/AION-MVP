@@ -16,7 +16,7 @@
   --input: hsl(0, 0%, 15%);
   --primary: hsl(12, 100%, 60%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(12, 100%, 60%);
+  --secondary: hsl(5, 99%, 55%);
   --secondary-foreground: hsl(0, 0%, 100%);
   --accent: hsl(12, 100%, 60%);
   --accent-foreground: hsl(0, 0%, 100%);
@@ -45,7 +45,7 @@
   --input: hsl(0, 0%, 15%);
   --primary: hsl(12, 100%, 60%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(12, 100%, 60%);
+  --secondary: hsl(5, 99%, 55%);
   --secondary-foreground: hsl(0, 0%, 100%);
   --accent: hsl(12, 100%, 60%);
   --accent-foreground: hsl(0, 0%, 100%);
