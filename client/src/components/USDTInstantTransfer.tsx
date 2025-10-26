@@ -124,6 +124,9 @@ export function USDTInstantTransfer() {
         await lockTx.wait();
       }
 
+      // Start timing from signature creation
+      const submissionStartTime = Date.now();
+      
       setCurrentStep("Creating signed transfer message...");
 
       // Create the signed transfer message using the same method as working ERC20 component
@@ -138,46 +141,30 @@ export function USDTInstantTransfer() {
         data.amount
       );
 
-      // signedTransfer is already created above
-
-      // Show immediate success right after signature
-      const postSignatureStart = Date.now();
-      
-      // Fire and forget - submit to relayer in background
+      // Wait for backend confirmation
       setCurrentStep("Submitting to relayer...");
       
-      const submitToRelayer = async (signedMessage: any) => {
-        const response = await fetch("/api/relayer/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(signedMessage),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Failed to submit transfer");
-        }
-
-        return response.json();
-      };
-
-      submitToRelayer(signedTransfer).catch(error => {
-        console.error('Background relayer submission failed:', error);
-        toast({
-          title: "Submission Error",
-          description: error.message,
-          variant: "destructive",
-        });
+      const response = await fetch("/api/relayer/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(signedTransfer),
       });
 
-      // Show immediate success - signed message ready!
-      const submissionTime = Date.now() - postSignatureStart;
-      console.log('Signed message ready! Showing success modal with timing:', submissionTime, 'ms');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to submit transfer");
+      }
+
+      const result = await response.json();
+      
+      // Calculate actual round-trip time
+      const submissionTime = Date.now() - submissionStartTime;
+      console.log('Backend confirmed! Round-trip time:', submissionTime, 'ms');
       
       setSuccessData({
-        txHash: `pending-${Date.now()}`, // Temporary ID based on timestamp
+        txHash: result.transferId || `pending-${Date.now()}`,
         confirmationTime: submissionTime,
         amount: data.amount,
         token: "USDT",
@@ -191,7 +178,7 @@ export function USDTInstantTransfer() {
 
       toast({
         title: "Transfer Submitted Successfully",
-        description: `Your USDT transfer has been submitted to the relayer and will be executed shortly.`,
+        description: `Backend received your transfer! (${submissionTime}ms)`,
       });
 
     } catch (error: any) {
