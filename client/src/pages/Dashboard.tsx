@@ -40,6 +40,19 @@ export default function Dashboard() {
                 </div>
                 <span className="text-xs bg-surface px-2 py-1 rounded-full text-gray-300">v1.0</span>
               </div>
+              
+              <div className="flex items-center space-x-4">
+                <Link href="/cointoss">
+                  <Button
+                    variant="outline"
+                    className="bg-primary/10 border-primary hover:bg-primary/20 text-white"
+                    data-testid="button-cointoss-nav"
+                  >
+                    <Coins className="w-4 h-4 mr-2" />
+                    Coin Toss
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </header>
