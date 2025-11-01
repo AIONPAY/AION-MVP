@@ -64,6 +64,20 @@ export const relayerConfig = pgTable("relayer_config", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const coinTossGames = pgTable("coin_toss_games", {
+  id: serial("id").primaryKey(),
+  playerAddress: text("player_address").notNull(),
+  betAmount: decimal("bet_amount", { precision: 18, scale: 18 }).notNull(),
+  playerChoice: text("player_choice").notNull(), // 'heads' or 'tails'
+  result: text("result").notNull(), // 'heads' or 'tails'
+  won: boolean("won").notNull(),
+  payoutAmount: decimal("payout_amount", { precision: 18, scale: 18 }),
+  payoutTxHash: text("payout_tx_hash"),
+  randomSeed: text("random_seed").notNull(), // For verifiability
+  status: text("status").notNull().default("pending"), // 'pending', 'paid', 'failed'
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -99,6 +113,11 @@ export const insertRelayerConfigSchema = createInsertSchema(relayerConfig).omit(
   updatedAt: true,
 });
 
+export const insertCoinTossGameSchema = createInsertSchema(coinTossGames).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
@@ -109,3 +128,5 @@ export type TransactionLog = typeof transactionLogs.$inferSelect;
 export type InsertTransactionLog = z.infer<typeof insertTransactionLogSchema>;
 export type RelayerConfig = typeof relayerConfig.$inferSelect;
 export type InsertRelayerConfig = z.infer<typeof insertRelayerConfigSchema>;
+export type CoinTossGame = typeof coinTossGames.$inferSelect;
+export type InsertCoinTossGame = z.infer<typeof insertCoinTossGameSchema>;
