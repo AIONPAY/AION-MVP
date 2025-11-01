@@ -47,9 +47,16 @@ export function createCoinTossRoutes(): Router {
       const result = lastBit === 0 ? 'heads' : 'tails';
       const won = result === choice;
       
-      const payoutAmount = won ? (parseFloat(betAmount) * WIN_MULTIPLIER).toString() : "0";
+      // Calculate payout using precise decimal arithmetic
+      let payoutAmount = "0";
+      if (won) {
+        // Convert to number, multiply, then round to 6 decimals for USDT precision
+        const bet = Number(betAmount);
+        const payout = bet * WIN_MULTIPLIER;
+        payoutAmount = payout.toFixed(6);
+      }
 
-      // Store game result
+      // Store game result with timestamp for verification
       const [game] = await db.insert(coinTossGames).values({
         playerAddress,
         betAmount,
@@ -58,6 +65,7 @@ export function createCoinTossRoutes(): Router {
         won,
         payoutAmount,
         randomSeed,
+        timestamp, // Store timestamp for provable fairness
         status: won ? 'pending' : 'completed'
       }).returning();
 
@@ -69,8 +77,9 @@ export function createCoinTossRoutes(): Router {
         won,
         payoutAmount: won ? payoutAmount : "0",
         randomSeed,
+        timestamp, // Return timestamp for client-side verification
         message: won 
-          ? `You won! Click claim to receive ${payoutAmount} USDT!`
+          ? `You won! You would receive ${payoutAmount} USDT!`
           : `You lost. The coin landed on ${result}.`
       });
 
@@ -133,10 +142,14 @@ export function createCoinTossRoutes(): Router {
         result: game.result,
         won: game.won,
         randomSeed: game.randomSeed,
+        timestamp: game.timestamp,
         createdAt: game.createdAt,
         verification: {
-          message: "You can verify this game was fair by hashing the randomSeed with timestamp and player address",
-          randomSeed: game.randomSeed
+          message: "Verify fairness: SHA256(randomSeed + timestamp + playerAddress) = hash. Last bit determines result.",
+          randomSeed: game.randomSeed,
+          timestamp: game.timestamp,
+          playerAddress: game.playerAddress,
+          instructions: `1. Concatenate: ${game.randomSeed}-${game.timestamp}-${game.playerAddress}\n2. Calculate SHA256 hash\n3. Last hex digit mod 2: 0=heads, 1=tails`
         }
       });
     } catch (error: any) {

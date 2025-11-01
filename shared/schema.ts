@@ -74,6 +74,7 @@ export const coinTossGames = pgTable("coin_toss_games", {
   payoutAmount: decimal("payout_amount", { precision: 18, scale: 18 }),
   payoutTxHash: text("payout_tx_hash"),
   randomSeed: text("random_seed").notNull(), // For verifiability
+  timestamp: text("timestamp").notNull(), // Timestamp used in hash for verification
   status: text("status").notNull().default("pending"), // 'pending', 'paid', 'failed'
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
