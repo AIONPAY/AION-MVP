@@ -8,6 +8,7 @@ import { createCoinTossRoutes } from "./cointoss/routes";
 import { db } from "./db";
 import { signedTransfers } from "@shared/schema";
 import { eq, or, desc } from "drizzle-orm";
+import { ethers } from "ethers";
 
 // Utility function to validate private key
 function validatePrivateKey(privateKey: string): string {

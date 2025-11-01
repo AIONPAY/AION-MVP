@@ -8,11 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Coins, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { Coins, TrendingUp, TrendingDown, DollarSign, ArrowLeft } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Link } from "wouter";
 import type { CoinTossGame } from "@shared/schema";
-
-const HOUSE_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
 
 export default function CoinToss() {
   const { account, isConnected } = useWallet();
@@ -120,6 +119,19 @@ export default function CoinToss() {
   return (
     <div className="min-h-screen bg-[rgb(12,12,12)] dark:bg-[rgb(12,12,12)] text-white p-4">
       <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <Link href="/">
+            <Button
+              variant="ghost"
+              className="text-gray-400 hover:text-white"
+              data-testid="button-back-home"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+        </div>
+        
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-[rgb(255,73,51)] to-orange-500 bg-clip-text text-transparent">
             AION Coin Toss
@@ -237,14 +249,8 @@ export default function CoinToss() {
                   {lastResult.won && (
                     <div className="space-y-2 text-sm">
                       <p className="text-gray-300 dark:text-gray-300">
-                        Payout: <span className="font-semibold text-green-400 dark:text-green-400">{lastResult.payoutAmount} USDT</span>
+                        You would win: <span className="font-semibold text-green-400 dark:text-green-400">{lastResult.payoutAmount} USDT</span>
                       </p>
-                      <p className="text-gray-400 dark:text-gray-400">
-                        Send {betAmount} USDT to house address to receive your winnings:
-                      </p>
-                      <code className="block p-2 bg-black/50 dark:bg-black/50 rounded text-xs break-all text-white dark:text-white">
-                        {lastResult.houseAddress}
-                      </code>
                     </div>
                   )}
                 </div>
@@ -351,15 +357,11 @@ export default function CoinToss() {
             </div>
             <div className="flex gap-3">
               <span className="text-[rgb(255,73,51)] dark:text-[rgb(255,73,51)] font-bold">3.</span>
-              <p>If you win, send your bet amount to the house address displayed</p>
+              <p>See the result instantly and track your win/loss record</p>
             </div>
             <div className="flex gap-3">
               <span className="text-[rgb(255,73,51)] dark:text-[rgb(255,73,51)] font-bold">4.</span>
-              <p>The AION relayer will automatically send you 1.8x your bet amount back!</p>
-            </div>
-            <div className="mt-4 p-3 bg-[rgb(255,73,51)]/10 dark:bg-[rgb(255,73,51)]/10 rounded border border-[rgb(255,73,51)]/50 dark:border-[rgb(255,73,51)]/50">
-              <p className="text-[rgb(255,73,51)] dark:text-[rgb(255,73,51)] font-semibold">House Address:</p>
-              <code className="text-xs text-white dark:text-white break-all">{HOUSE_ADDRESS}</code>
+              <p>If you win, you would receive 1.8x your bet amount!</p>
             </div>
           </CardContent>
         </Card>
