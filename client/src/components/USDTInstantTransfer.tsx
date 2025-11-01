@@ -138,51 +138,40 @@ export function USDTInstantTransfer() {
         data.amount
       );
 
-      // signedTransfer is already created above
+      console.log('Signed transfer created:', signedTransfer);
 
-      // Show immediate success right after signature
-      const postSignatureStart = Date.now();
-      
-      // Fire and forget - submit to relayer in background
+      // Submit to relayer
       setCurrentStep("Submitting to relayer...");
       
-      const submitToRelayer = async (signedMessage: any) => {
+      try {
         const response = await fetch("/api/relayer/submit", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(signedMessage),
+          body: JSON.stringify(signedTransfer),
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Failed to submit transfer");
+          const errorData = await response.json();
+          console.error('Relayer submission failed:', errorData);
+          throw new Error(errorData.error || "Failed to submit transfer");
         }
 
-        return response.json();
-      };
-
-      submitToRelayer(signedTransfer).catch(error => {
-        console.error('Background relayer submission failed:', error);
-        toast({
-          title: "Submission Error",
-          description: error.message,
-          variant: "destructive",
+        const result = await response.json();
+        console.log('Relayer accepted transfer:', result);
+        
+        setSuccessData({
+          txHash: result.transferId || `pending-${Date.now()}`,
+          confirmationTime: 100, // Approximate instant time
+          amount: data.amount,
+          token: "USDT",
+          recipient: data.to
         });
-      });
-
-      // Show immediate success - signed message ready!
-      const submissionTime = Date.now() - postSignatureStart;
-      console.log('Signed message ready! Showing success modal with timing:', submissionTime, 'ms');
-      
-      setSuccessData({
-        txHash: `pending-${Date.now()}`, // Temporary ID based on timestamp
-        confirmationTime: submissionTime,
-        amount: data.amount,
-        token: "USDT",
-        recipient: data.to
-      });
+      } catch (submitError: any) {
+        console.error('Submit error:', submitError);
+        throw submitError;
+      }
       
       setIsProcessing(false);
       setCurrentStep("");
@@ -191,7 +180,7 @@ export function USDTInstantTransfer() {
 
       toast({
         title: "Transfer Submitted Successfully",
-        description: `Your USDT transfer has been submitted to the relayer and will be executed shortly.`,
+        description: `Your USDT transfer has been submitted to the relayer.`,
       });
 
     } catch (error: any) {

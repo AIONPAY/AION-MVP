@@ -4,11 +4,9 @@ import { storage } from "./storage";
 import { TransactionQueue } from "./relayer/queue";
 import { WebSocketManager } from "./relayer/websocket";
 import { createRelayerRoutes } from "./relayer/routes";
-import { createCoinTossRoutes } from "./cointoss/routes";
 import { db } from "./db";
 import { signedTransfers } from "@shared/schema";
 import { eq, or, desc } from "drizzle-orm";
-import { ethers } from "ethers";
 
 // Utility function to validate private key
 function validatePrivateKey(privateKey: string): string {
@@ -73,9 +71,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register relayer API routes
   app.use("/api/relayer", createRelayerRoutes(transactionQueue));
-
-  // Register coin toss game routes
-  app.use("/api/cointoss", createCoinTossRoutes());
 
   // Transaction history endpoint
   app.get("/api/transactions/:address", async (req, res) => {

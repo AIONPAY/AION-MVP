@@ -16,9 +16,7 @@ import { NotificationSystem } from "@/components/NotificationSystem";
 import { useWallet } from "@/contexts/WalletContext";
 import { isMetaMaskInstalled } from "@/lib/web3";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, Atom, Coins } from "lucide-react";
-import { Link } from "wouter";
+import { AlertCircle, Atom } from "lucide-react";
 
 export default function Dashboard() {
   const { isConnected } = useWallet();
@@ -39,19 +37,6 @@ export default function Dashboard() {
                   <span className="text-xl font-bold text-white">AION Protocol</span>
                 </div>
                 <span className="text-xs bg-surface px-2 py-1 rounded-full text-gray-300">v1.0</span>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <Link href="/cointoss">
-                  <Button
-                    variant="outline"
-                    className="bg-primary/10 border-primary hover:bg-primary/20 text-white"
-                    data-testid="button-cointoss-nav"
-                  >
-                    <Coins className="w-4 h-4 mr-2" />
-                    Coin Toss
-                  </Button>
-                </Link>
               </div>
             </div>
           </div>
@@ -94,17 +79,6 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <Link href="/cointoss">
-                <Button
-                  variant="outline"
-                  className="bg-primary/10 border-primary hover:bg-primary/20 text-white"
-                  data-testid="button-cointoss-nav"
-                >
-                  <Coins className="w-4 h-4 mr-2" />
-                  Coin Toss
-                </Button>
-              </Link>
-              
               <div className="hidden md:flex items-center space-x-6 text-sm">
                 <span className="text-gray-400">Network:</span>
                 <div className="flex items-center space-x-2">

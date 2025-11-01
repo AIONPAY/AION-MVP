@@ -4,14 +4,12 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WalletProvider } from "@/contexts/WalletContext";
 import Dashboard from "@/pages/Dashboard";
-import CoinToss from "@/pages/CoinToss";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route path="/cointoss" component={CoinToss} />
       <Route component={NotFound} />
     </Switch>
   );
