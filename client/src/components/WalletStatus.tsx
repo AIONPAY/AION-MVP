@@ -15,13 +15,13 @@ export function WalletStatus() {
 
   // Query locked USDT balance
   const { data: lockedUSDTBalance = "0" } = useQuery({
-    queryKey: ['locked-usdt-balance', account],
+    queryKey: ["locked-usdt-balance", account],
     queryFn: async () => {
       if (!account) return "0";
       try {
         const [tokenInfo, balance] = await Promise.all([
           getTokenInfo(USDT_ADDRESS),
-          getLockedBalanceERC20(USDT_ADDRESS, account)
+          getLockedBalanceERC20(USDT_ADDRESS, account),
         ]);
         const decimals = Number(tokenInfo.decimals);
         return ethers.utils.formatUnits(balance, decimals);
@@ -51,26 +51,35 @@ export function WalletStatus() {
             <span>Active</span>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-surface rounded-lg p-4">
             <div className="text-sm text-gray-400 mb-1">Wallet Address</div>
             <div className="font-mono text-sm">{formatAddress(account)}</div>
           </div>
-          
+
           <div className="bg-surface rounded-lg p-4">
             <div className="text-sm text-gray-400 mb-1">ETH Balance</div>
-            <div className="text-lg font-semibold">{parseFloat(ethBalance).toFixed(3)} ETH</div>
+            <div className="text-lg font-semibold">
+              {parseFloat(ethBalance).toFixed(3)} ETH
+            </div>
           </div>
-          
+
           <div className="bg-surface rounded-lg p-4">
-            <div className="text-sm text-gray-400 mb-1">Locked ETH</div>
-            <div className="text-lg font-semibold text-primary">{parseFloat(lockedBalance).toFixed(3)} ETH</div>
+            <div className="text-sm text-gray-400 mb-1">WRPD ETH</div>
+            <div className="text-lg font-semibold text-primary">
+              {parseFloat(lockedBalance).toFixed(3)} ETH
+            </div>
           </div>
-          
-          <div className="bg-surface rounded-lg p-4" data-testid="locked-usdt-balance">
-            <div className="text-sm text-gray-400 mb-1">Locked USDT</div>
-            <div className="text-lg font-semibold text-primary">{parseFloat(lockedUSDTBalance).toFixed(2)} USDT</div>
+
+          <div
+            className="bg-surface rounded-lg p-4"
+            data-testid="locked-usdt-balance"
+          >
+            <div className="text-sm text-gray-400 mb-1">WRPD USDT</div>
+            <div className="text-lg font-semibold text-primary">
+              {parseFloat(lockedUSDTBalance).toFixed(2)} USDT
+            </div>
           </div>
         </div>
       </CardContent>
