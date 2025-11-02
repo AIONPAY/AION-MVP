@@ -61,6 +61,8 @@ export function createRelayerRoutes(queue: TransactionQueue): Router {
   router.post("/submit", async (req, res) => {
     console.log("=== RELAYER: Transfer submission received ===");
     console.log("Request body:", JSON.stringify(req.body, null, 2));
+    console.log("Nonce length:", req.body.nonce ? req.body.nonce.length : 'undefined');
+    console.log("Nonce value:", req.body.nonce);
     
     try {
       const validation = signedTransferSchema.safeParse(req.body);
