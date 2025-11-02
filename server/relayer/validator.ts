@@ -110,9 +110,14 @@ export class TransferValidator {
       try {
         const amountWei = ethers.utils.parseEther(transfer.amount);
         
-        // Get chain ID - default to Sepolia if not available
-        const network = await this.provider.getNetwork();
-        const chainId = network.chainId;
+        // Get chain ID - default to Sepolia if network query fails
+        let chainId = 11155111; // Sepolia default
+        try {
+          const network = await this.provider.getNetwork();
+          chainId = network.chainId;
+        } catch (networkError) {
+          console.warn("Failed to get network from provider, using Sepolia default:", networkError);
+        }
         
         // EIP-712 Domain
         const domain = {
@@ -195,7 +200,7 @@ export class TransferValidator {
       
       // Filter out current transfer if re-validating
       const relevantTransfers = excludeTransferId 
-        ? existingTransfer.filter(t => t.id !== excludeTransferId)
+        ? existingTransfer.filter((t: any) => t.id !== excludeTransferId)
         : existingTransfer;
       
       console.log(`Database nonce check: Found ${relevantTransfers.length} relevant transfers with this nonce (excluding ID ${excludeTransferId || 'none'})`);
