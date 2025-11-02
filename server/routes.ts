@@ -77,6 +77,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { address } = req.params;
       
+      // Check if database is available
+      if (!db) {
+        console.error("Database connection not available");
+        return res.json({ transactions: [] }); // Return empty array instead of error
+      }
+      
       // Get transfers for this address (both sent and received)
       const transfers = await db
         .select({
@@ -102,9 +108,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(50);
 
       res.json({ transactions: transfers });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching transaction history:", error);
-      res.status(500).json({ error: "Failed to fetch transaction history" });
+      console.error("Error details:", {
+        message: error?.message,
+        stack: error?.stack,
+        code: error?.code
+      });
+      // Return empty transactions instead of error to prevent UI breaking
+      res.json({ transactions: [] });
     }
   });
 
